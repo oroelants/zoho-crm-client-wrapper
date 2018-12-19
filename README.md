@@ -36,6 +36,18 @@ $zohoClient = new ZohoClient([
 ]);
 ```  
 
+Zoho CRM Commands
+-------------------------------------
+The project also comes with a Symfony Command.
+
+The command's constructor takes in parameter the `ZohoClient`
+
+Usage:
+
+```sh
+# Command to generate access token
+$ console zohocrm:cmd generate-access-token xxxxxxx
+```
 
 Setting up unit tests
 ---------------------
