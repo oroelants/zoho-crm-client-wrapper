@@ -48,7 +48,6 @@ class ZohoCRMCommand extends Command
 Use method from the Zoho Client
 EOT
             );
-        $this->addArgument('eventCode', InputArgument::REQUIRED, 'Specify the eventCode from Certain');
     }
     public function execute(InputInterface $input, OutputInterface $output)
     {
