@@ -31,7 +31,7 @@ class ZohoCRMCommand extends Command
      * ZohoCRMCommand constructor.
      * @param ZohoClient $zohoClient
      */
-    public function __construct(ZohoClient $zohoClient, MultiLogger $logger, string $name = null)
+    public function __construct(ZohoClient $zohoClient, MultiLogger $logger)
     {
         parent::__construct($name);
         $this->zohoClient = $zohoClient;
