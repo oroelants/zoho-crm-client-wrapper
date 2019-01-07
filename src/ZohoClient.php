@@ -36,7 +36,8 @@ class ZohoClient
         $this->configurations = $configurations;
     }
 
-    public function initCLient() :void{
+    public function initClient() :void
+    {
         \ZCRMRestClient::initialize($this->configurations);
     }
 
@@ -44,16 +45,20 @@ class ZohoClient
      * @return \ZohoOAuthClient
      * @throws \ZohoOAuthException
      */
-    public function getZohoOAuthClient(){
-        $this->initCLient();
+    public function getZohoOAuthClient()
+    {
+        $this->initClient();
+
         return \ZohoOAuth::getClientInstance();
     }
 
     /**
      * @return \ZCRMRestClient
      */
-    public function getZCRMRestClient(){
-        $this->initCLient();
+    public function getZCRMRestClient()
+    {
+        $this->initClient();
+
         return \ZCRMRestClient::getInstance();
     }
 
@@ -62,8 +67,10 @@ class ZohoClient
      * @return \ZohoOAuthTokens
      * @throws \ZohoOAuthException
      */
-    public function generateAccessToken(string $grantToken){
+    public function generateAccessToken(string $grantToken)
+    {
         $client = $this->getZohoOAuthClient();
+
         return $client->generateAccessToken($grantToken);
     }
 
@@ -72,8 +79,10 @@ class ZohoClient
      * @param string $userIdentifier
      * @return mixed
      */
-    public function generateAccessTokenFromRefreshToken(string $refreshToken, string $userIdentifier){
+    public function generateAccessTokenFromRefreshToken(string $refreshToken, string $userIdentifier)
+    {
         $oAuthClient = $this->getZohoOAuthClient();
+
         return $oAuthClient->generateAccessTokenFromRefreshToken($refreshToken,$userIdentifier);
     }
 
@@ -84,18 +93,21 @@ class ZohoClient
      * @param string|null $userId
      * @return array
      */
-    public function convertLead($leadId, $dealId = null, $userId = null)
+    public function convertLead(string $leadId, ?string $dealId = null, ?string $userId = null)
     {
-        $record = $this->getRecordById("Leads", $leadId);
+        $record = $this->getRecordById('Leads', $leadId);
         $userInstance = null;
         $recordDeal = null;
-        if($dealId){
-            $modIns = $this->getModule("Deals");
+
+        if ($dealId) {
+            $modIns = $this->getModule('Deals');
             $recordDeal = $modIns->getRecord($dealId)->getData();
         }
-        if($userId){
+
+        if ($userId) {
             $userInstance = $this->getUser($userId);
         }
+
         return $record->convert($recordDeal, $userInstance);
     }
 
@@ -104,12 +116,13 @@ class ZohoClient
      *
      * @return \ZCRMField[]
      */
-    public function getFields($module)
+    public function getFields(string $module)
     {
         /**
          * @var $response \APIResponse
          */
         $response = $this->getModule($module)->getAllFields();
+
         return $response->getData();
     }
 
@@ -120,12 +133,14 @@ class ZohoClient
      * @param string|array $ids     Id of the record
      * @return \EntityResponse[]
      */
-    public function deleteRecords($module, $ids)
+    public function deleteRecords(string $module, $ids)
     {
         $zcrmModuleIns = $this->getModule($module);
-        if(is_string($ids)){
+
+        if (!is_array($ids)) {
             $ids = [$ids];
         }
+
         /**
          * @var $bulkAPIResponse \BulkAPIResponse
          */
@@ -141,12 +156,13 @@ class ZohoClient
      * @param string $id     Id of the record or a list of IDs separated by a semicolon
      * @return \ZCRMRecord
      */
-    public function getRecordById($module, $id)
+    public function getRecordById(string $module, string $id)
     {
         /**
          * @var $response \APIResponse
          */
         $response = $this->getModule($module)->getRecord($id);
+
         return $response->getData();
     }
     /**
@@ -160,14 +176,29 @@ class ZohoClient
      * @param null $header
      * @return \ZCRMRecord[]
      */
-    public function getRecords($module, $cvId = null, $sortColumnString = null, $sortOrderString = null, $fromIndex = 1, $toIndex = 200, $header = null)
-    {
-
+    public function getRecords(
+        string $module,
+        ?string $cvId = null,
+        ?string $sortColumnString = null,
+        ?string $sortOrderString = null,
+        int $fromIndex = 1,
+        int $toIndex = 200,
+        ?array $header = null
+    ) {
         $zcrmModuleIns = $this->getModule($module);
+
         /**
          * @var $bulkAPIResponse \BulkAPIResponse
          */
-        $bulkAPIResponse = $zcrmModuleIns->getRecords($cvId,$sortColumnString, $sortOrderString, $fromIndex, $toIndex, $header);
+        $bulkAPIResponse = $zcrmModuleIns->getRecords(
+            $cvId,
+            $sortColumnString,
+            $sortOrderString,
+            $fromIndex,
+            $toIndex,
+            $header
+        );
+
         return $bulkAPIResponse->getData();
     }
 
@@ -177,23 +208,22 @@ class ZohoClient
      * @param string $typeOfRecord
      * @return \ZCRMTrashRecord[]
      */
-    public function getDeletedRecordIds($module, $typeOfRecord = "all")
+    public function getDeletedRecordIds(string $module, string $typeOfRecord = 'all')
     {
         $zcrmModuleIns = $this->getModule($module);
 
         /**
          * @var $response \BulkAPIResponse
          */
-        switch ($typeOfRecord){
-            case "recycle":
+        switch ($typeOfRecord) {
+            case 'recycle':
                 $response = $zcrmModuleIns->getRecycleBinRecords();
-            case "permanent":
+            case 'permanent':
                 $response = $zcrmModuleIns->getPermanentlyDeletedRecords();
             case 'all':
             default:
                 $response = $zcrmModuleIns->getAllDeletedRecords();
             break;
-
         }
 
         return $response->getData();
@@ -210,13 +240,27 @@ class ZohoClient
      * @param int $perPage
      * @return \ZCRMRecord[]
      */
-    public function getRelatedListRecords($module, $id, $relatedListAPIName, $sortByField = null, $sortByOrder = null, $page = 1, $perPage = 200)
-    {
+    public function getRelatedListRecords(
+        string $module,
+        string $id,
+        string $relatedListAPIName,
+        ?string $sortByField = null,
+        ?string $sortByOrder = null,
+        int $page = 1,
+        int $perPage = 200
+    ) {
         /**
          * @var $zcrmRecordIns \ZCRMRecord
          */
         $zcrmRecordIns  = $this->getRecordById($module, $id);
-        $bulkAPIResponse = $zcrmRecordIns->getRelatedListRecords($relatedListAPIName, $sortByField, $sortByOrder , $page, $perPage);
+        $bulkAPIResponse = $zcrmRecordIns->getRelatedListRecords(
+            $relatedListAPIName,
+            $sortByField,
+            $sortByOrder,
+            $page,
+            $perPage
+        );
+
         return $bulkAPIResponse->getData();
     }
 
@@ -230,15 +274,22 @@ class ZohoClient
      * @param int $perPage
      * @return \ZCRMRecord[]
      */
-    public function searchRecords($module, $searchCondition, string $type = 'word', $page = 1, $perPage = 200)
-    {
+    public function searchRecords(
+        string $module,
+        $searchCondition,
+        string $type = 'word',
+        int $page = 1,
+        int $perPage = 200
+    ) {
         $zcrmModuleIns = $this->getModule($module);
-        if($type === 'word'){
+
+        if ($type === 'word') {
             $bulkAPIResponse = $zcrmModuleIns->searchRecords($searchCondition,$page, $perPage);
-        } else{
-            $typeSearchMethod = "searchRecordsBy".ucfirst($type);
+        } else {
+            $typeSearchMethod = "searchRecordsBy" . ucfirst($type);
             $bulkAPIResponse = $zcrmModuleIns->{"$typeSearchMethod"}($searchCondition,$page, $perPage);
         }
+
         return $bulkAPIResponse->getData();
     }
 
@@ -248,13 +299,15 @@ class ZohoClient
      * @param string|null $orgId
      * @return \ZCRMUser
      */
-    public function getUser($userId ,$orgName = null, $orgId = null)
+    public function getUser(string $userId, ?string $orgName = null, ?string $orgId = null)
     {
-        $this->initCLient();
+        $this->initClient();
+
         /**
          * @var $APIResponse \APIResponse
          */
         $APIResponse = \ZCRMOrganization::getInstance($orgName, $orgId)->getUser($userId);
+
         return $APIResponse->getData();
     }
 
@@ -266,14 +319,16 @@ class ZohoClient
      * @param string|null $orgId
      * @return \ZCRMUser[]
      */
-    public function getUsers($type = 'AllUsers',$orgName = null, $orgId = null)
+    public function getUsers(string $type = 'AllUsers', ?string $orgName = null, ?string $orgId = null)
     {
         $typeMethod = "get" . $type;
-        $this->initCLient();
+        $this->initClient();
+
         /**
          * @var $bulkAPIResponse \BulkAPIResponse
          */
         $bulkAPIResponse = \ZCRMOrganization::getInstance($orgName, $orgId)->{"$typeMethod"}();
+        
         return $bulkAPIResponse->getData();
     }
 
@@ -283,13 +338,15 @@ class ZohoClient
      * @param array|\ZCRMRecord[] $records
      * @return \EntityResponse[]
      */
-    public function upsertRecords($module, array $records)
+    public function upsertRecords(string $module, array $records)
     {
         $zcrmModuleIns = $this->getModule($module);
+
         /**
          * @var $bulkAPIResponse \BulkAPIResponse
          */
         $bulkAPIResponse = $zcrmModuleIns->upsertRecords($records);
+
         return $bulkAPIResponse->getEntityResponses();
     }
 
@@ -301,13 +358,14 @@ class ZohoClient
      * @param null|bool $trigger
      * @return \EntityResponse[]
      */
-    public function insertRecords($module, array $records,  ?bool $trigger = null)
+    public function insertRecords(string $module, array $records, ?bool $trigger = null)
     {
         $zcrmModuleIns = $this->getModule($module);
         /**
          * @var $bulkAPIResponse \BulkAPIResponse
          */
         $bulkAPIResponse = $zcrmModuleIns->createRecords($records, $trigger);
+
         return $bulkAPIResponse->getEntityResponses();
     }
 
@@ -325,6 +383,7 @@ class ZohoClient
          * @var $bulkAPIResponse \BulkAPIResponse
          */
         $bulkAPIResponse = $zcrmModuleIns->updateRecords($records, $trigger);
+
         return $bulkAPIResponse->getEntityResponses();
     }
 
@@ -337,13 +396,20 @@ class ZohoClient
      * @param array $fieldsValue
      * @return \APIResponse
      */
-    public function updateRelatedRecords(string $module, string $relatedModule, string $recordId, string $relatedRecordId,  array $fieldsValue)
-    {
-        $parentRecord=\ZCRMRecord::getInstance($module, $recordId);
-        $junctionRecord=\ZCRMJunctionRecord::getInstance($relatedModule, $relatedRecordId);
+    public function updateRelatedRecords(
+        string $module,
+        string $relatedModule,
+        string $recordId,
+        string $relatedRecordId,
+        array $fieldsValue
+    ) {
+        $parentRecord = \ZCRMRecord::getInstance($module, $recordId);
+        $junctionRecord = \ZCRMJunctionRecord::getInstance($relatedModule, $relatedRecordId);
+
         foreach ($fieldsValue as $fieldApiName => $value){
             $junctionRecord->setRelatedData($fieldApiName, $value);
         }
+
         return $parentRecord->addRelation($junctionRecord);
     }
 
@@ -357,6 +423,7 @@ class ZohoClient
     public function uploadFile(string $module, string $recordId, string $filepath)
     {
         $record = \ZCRMRecord::getInstance($module, $recordId);
+        
         return $record->uploadAttachment($filepath);
     }
 
@@ -372,6 +439,7 @@ class ZohoClient
     public function downloadFile(string $module, string $recordId, string $attachmentId)
     {
         $record = \ZCRMRecord::getInstance($module, $recordId);
+
         return $record->downloadAttachment($attachmentId);
     }
 
@@ -382,7 +450,8 @@ class ZohoClient
      * @return \ZCRMModule
      */
     public function getModule(string $moduleName){
-        $this->initCLient();
+        $this->initClient();
+
         return \ZCRMModule::getInstance($moduleName);
     }
 
@@ -393,11 +462,12 @@ class ZohoClient
      */
     public function getModules(): array
     {
-        $this->initCLient();
+        $this->initClient();
         /**
          * @var $bulkAPIResponse \BulkAPIResponse
          */
         $bulkAPIResponse =  \ZCRMRestClient::getInstance()->getAllModules();
+
         return $bulkAPIResponse->getData();
     }
 
