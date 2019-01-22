@@ -99,7 +99,7 @@ class ZohoClientTest extends TestCase
      */
     public function testGetRecords(array $leads){
         $records = $this->zohoClient->getRecords('Leads', null, 'Created_Time', 'desc', 1, 4,
-            ['If-Modified-Since ' => (new \DateTime())->sub(new \DateInterval('PT2M'))->format(\DateTime::ATOM)]);
+            ['If-Modified-Since' => (new \DateTime())->sub(new \DateInterval('PT2M'))->format(\DateTime::ATOM)]);
         $firstEntity = array_shift($records);
         $this->assertInstanceOf('\ZCRMRecord', $firstEntity);
         $this->assertContains($firstEntity->getEntityId(), array_map(function (\ZCRMRecord $leadEntity){
@@ -150,8 +150,8 @@ class ZohoClientTest extends TestCase
      * @depends testGetRecordById
      * @param \ZCRMRecord $lead
      */
-    public function testGetDeletedRecordIds(\ZCRMRecord $lead){
-        $trashEntities = $this->zohoClient->getDeletedRecordIds('Leads');
+    public function testGetDeletedRecords(\ZCRMRecord $lead){
+        $trashEntities = $this->zohoClient->getDeletedRecords('Leads');
         $this->assertIsArray($trashEntities);
         /**
          * @var $firstEntity \ZCRMTrashRecord
@@ -164,7 +164,7 @@ class ZohoClientTest extends TestCase
     }
 
     /**
-     * @depends testGetDeletedRecordIds
+     * @depends testGetDeletedRecords
      */
     public function testUpsertRecordsAndSearch(){
         $lead4 = \ZCRMRecord::getInstance('Leads', null);

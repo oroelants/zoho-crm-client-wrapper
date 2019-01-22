@@ -1,6 +1,7 @@
 <?php
 
 namespace Wabel\Zoho\CRM;
+use Wabel\Zoho\CRM\Exceptions\ExceptionZohoClient;
 
 /**
  * Client for provide interface with Zoho CRM.
@@ -35,6 +36,15 @@ class ZohoClient
     {
         $this->configurations = $configurations;
     }
+
+    /**
+     * @return array|null
+     */
+    public function getConfigurations(): ?array
+    {
+        return $this->configurations;
+    }
+
 
     public function initCLient() :void{
         \ZCRMRestClient::initialize($this->configurations);
@@ -102,15 +112,24 @@ class ZohoClient
     /**
      * Implements getFields API method.
      *
-     * @return \ZCRMField[]
+     * @return \ZCRMField[]|null
+     * @throws \ZCRMException
      */
     public function getFields($module)
     {
-        /**
-         * @var $response \APIResponse
-         */
-        $response = $this->getModule($module)->getAllFields();
-        return $response->getData();
+        try{
+
+            /**
+             * @var $response \APIResponse
+             */
+            $response = $this->getModule($module)->getAllFields();
+            return $response->getData();
+        } catch(\ZCRMException $exception){
+            if($exception->getExceptionCode() === ExceptionZohoClient::EXCEPTION_CODE_NO__CONTENT){
+                return null;
+            }
+            throw $exception;
+        }
     }
 
     /**
@@ -172,31 +191,115 @@ class ZohoClient
     }
 
     /**
-     * Implements getDeletedRecordIds API method.
-     * @param $module
+     * Implements getDeletedRecords by rewrite MassEntityAPIHandler::getDeletedRecords API method.
+     * @param string $module
      * @param string $typeOfRecord
-     * @return \ZCRMTrashRecord[]
+     * @param \DateTimeInterface|null $lastModifiedTime
+     * @param int $page
+     * @param int $perPage
+     * @return \BulkAPIResponse|null
+     * @throws \ZCRMException
+     * @see \ZCRMModule::getAllDeletedRecords()
+     * @see \ZCRMModule::getRecycleBinRecords()
+     * @see \ZCRMModule::getPermanentlyDeletedRecords()
+     * @see \MassEntityAPIHandler::getAllDeletedRecords()
+     * @see \MassEntityAPIHandler::getRecycleBinRecords()
+     * @see \MassEntityAPIHandler::getPermanentlyDeletedRecords()
+     * @see \MassEntityAPIHandler::getDeletedRecords()
+     *
      */
-    public function getDeletedRecordIds($module, $typeOfRecord = "all")
+    public function getDeletedRecords($module, $typeOfRecord = "all", \DateTimeInterface $lastModifiedTime = null, $page = 1, $perPage= 200)
     {
-        $zcrmModuleIns = $this->getModule($module);
+        try
+        {
+            $zcrmModuleIns = $this->getModule($module);
+            $massEntityAPIHandler = \MassEntityAPIHandler::getInstance($zcrmModuleIns);
+            if($lastModifiedTime){
+                $massEntityAPIHandler->addHeader('If-Modified-Since',$lastModifiedTime->format(\DateTime::ATOM));
+            }
+            $massEntityAPIHandler->addParam('page', $page);
+            $massEntityAPIHandler->addParam('per_page', $perPage);
+            $massEntityAPIHandler->setUrlPath($zcrmModuleIns->getAPIName()."/deleted");
+            $massEntityAPIHandler->setRequestMethod(\APIConstants::REQUEST_METHOD_GET);
+            $massEntityAPIHandler->addHeader("Content-Type","application/json");
+            $massEntityAPIHandler->addParam("type", $typeOfRecord);
+            /**
+             * @var $responseInstance \BulkAPIResponse
+             */
+            $responseInstance=\APIRequest::getInstance($massEntityAPIHandler)->getBulkAPIResponse();
 
-        /**
-         * @var $response \BulkAPIResponse
-         */
-        switch ($typeOfRecord){
-            case "recycle":
-                $response = $zcrmModuleIns->getRecycleBinRecords();
-            case "permanent":
-                $response = $zcrmModuleIns->getPermanentlyDeletedRecords();
-            case 'all':
-            default:
-                $response = $zcrmModuleIns->getAllDeletedRecords();
-            break;
+            $responseJSON=$responseInstance->getResponseJSON();
+            $trashRecordList=array();
+            if(isset($responseJSON['data'])){
+                $trashRecords=$responseJSON["data"];
+                foreach ($trashRecords as $trashRecord)
+                {
+                    $trashRecordInstance = \ZCRMTrashRecord::getInstance($trashRecord['type'],$trashRecord['id']);
+                    $massEntityAPIHandler->setTrashRecordProperties($trashRecordInstance,$trashRecord);
+                    array_push($trashRecordList,$trashRecordInstance);
+                }
+            }
+
+            $responseInstance->setData($trashRecordList);
+            return $responseInstance;
+        }
+        catch (\ZCRMException $exception)
+        {
+            if(strtolower($exception->getExceptionCode()) === strtolower(ExceptionZohoClient::EXCEPTION_CODE_NO__CONTENT)){
+                return null;
+            } else{
+                \APIExceptionHandler::logException($exception);
+                throw $exception;
+            }
 
         }
+    }
 
-        return $response->getData();
+    /**
+     * @param string $module
+     * @param \DateTimeInterface|null $lastModifiedTime
+     * @param int $page
+     * @param int $perPage
+     * @return \BulkAPIResponse
+     * @throws \ZCRMException
+     * @see \ZCRMModule::getPermanentlyDeletedRecords()
+     * @see \MassEntityAPIHandler::getPermanentlyDeletedRecords()
+     */
+    public function getPermanentlyDeletedRecords($module, \DateTimeInterface $lastModifiedTime = null, $page = 1, $perPage= 200)
+    {
+        return $this->getDeletedRecords($module, 'permanent', $lastModifiedTime, $page, $perPage);
+    }
+
+
+    /**
+     * @param string $module
+     * @param \DateTimeInterface|null $lastModifiedTime
+     * @param int $page
+     * @param int $perPage
+     * @return \BulkAPIResponse
+     * @throws \ZCRMException
+     * @see \ZCRMModule::getAllDeletedRecords()
+     * @see \MassEntityAPIHandler::getAllDeletedRecords()
+     */
+    public function getAllDeletedRecords($module, \DateTimeInterface $lastModifiedTime = null, $page = 1, $perPage= 200)
+    {
+        return $this->getDeletedRecords($module, 'all', $lastModifiedTime, $page, $perPage);
+    }
+
+
+    /**
+     * @param string $module
+     * @param \DateTimeInterface|null $lastModifiedTime
+     * @param int $page
+     * @param int $perPage
+     * @return \BulkAPIResponse
+     * @throws \ZCRMException
+     * @see \ZCRMModule::getRecycleBinRecords()
+     * @see \MassEntityAPIHandler::getRecycleBinRecords()
+     */
+    public function getRecycleBinRecords($module, \DateTimeInterface $lastModifiedTime = null, $page = 1, $perPage= 200)
+    {
+        return $this->getDeletedRecords($module, 'recycle', $lastModifiedTime, $page, $perPage);
     }
 
     /**
@@ -210,7 +313,7 @@ class ZohoClient
      * @param int $perPage
      * @return \ZCRMRecord[]
      */
-    public function getRelatedListRecords($module, $id, $relatedListAPIName, $sortByField = null, $sortByOrder = null, $page = 1, $perPage = 200)
+    public function getRelatedRecords($module, $id, $relatedListAPIName, $sortByField = null, $sortByOrder = null, $page = 1, $perPage = 200)
     {
         /**
          * @var $zcrmRecordIns \ZCRMRecord
