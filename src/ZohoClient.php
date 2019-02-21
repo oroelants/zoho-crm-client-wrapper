@@ -16,8 +16,13 @@ class ZohoClient
     private $configurations;
 
     /**
+     * @var string
+     */
+    protected $timezone;
+
+    /**
      * ZohoClient constructor.
-     * @param array|null $configurations
+     * @param array $configurations
      *             ['client_id' => '',
      *              'client_secret' => '',
      *             'redirect_uri' => '',
@@ -30,12 +35,22 @@ class ZohoClient
      *             'accounts_url' => '',
      *             'persistence_handler_class' => '',
      *             'token_persistence_path' => '']
-     *
+     * @param string $timezone
      */
-    public function __construct(?array $configurations = null)
+    public function __construct(array $configurations = null, string $timezone)
     {
         $this->configurations = $configurations;
+        $this->timezone = $timezone;
     }
+
+    /**
+     * @return string
+     */
+    public function getTimezone(): string
+    {
+        return $this->timezone;
+    }
+
 
     /**
      * @return array|null
@@ -215,6 +230,7 @@ class ZohoClient
             $zcrmModuleIns = $this->getModule($module);
             $massEntityAPIHandler = \MassEntityAPIHandler::getInstance($zcrmModuleIns);
             if($lastModifiedTime){
+
                 $massEntityAPIHandler->addHeader('If-Modified-Since',$lastModifiedTime->format(\DateTime::ATOM));
             }
             $massEntityAPIHandler->addParam('page', $page);
