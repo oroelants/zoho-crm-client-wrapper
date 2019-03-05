@@ -30,7 +30,13 @@
 
     <php>
         <!-- PLEASE CONFIGURE AUTH TOKEN BELOW IN COPIED FILE -->
-        <!--<env name="auth_token" value=""/>-->
+        <!--<env name="client_id" value=""/>-->
+        <!--<env name="client_secret" value=""/>-->
+        <!--<env name="redirect_uri" value=""/>-->
+        <!--<env name="currentUserEmail" value=""/>-->
+        <!--<env name="applicationLogFilePath" value=""/>-->
+        <!--<env name="persistence_handler_class" value=""/>-->
+        <!--<env name="token_persistence_path" value=""/>-->
     </php>
 
     <filter>
