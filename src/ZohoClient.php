@@ -140,7 +140,7 @@ class ZohoClient
             $response = $this->getModule($module)->getAllFields();
             return $response->getData();
         } catch(\ZCRMException $exception){
-            if($exception->getExceptionCode() === ExceptionZohoClient::EXCEPTION_CODE_NO__CONTENT){
+            if(ExceptionZohoClient::exceptionCodeFormat($exception->getExceptionCode()) === ExceptionZohoClient::EXCEPTION_CODE_NO__CONTENT){
                 return null;
             }
             throw $exception;
@@ -261,7 +261,7 @@ class ZohoClient
         }
         catch (\ZCRMException $exception)
         {
-            if(strtolower($exception->getExceptionCode()) === strtolower(ExceptionZohoClient::EXCEPTION_CODE_NO__CONTENT)){
+            if(ExceptionZohoClient::exceptionCodeFormat($exception->getExceptionCode()) === ExceptionZohoClient::EXCEPTION_CODE_NO__CONTENT){
                 return null;
             } else{
                 \APIExceptionHandler::logException($exception);
@@ -327,7 +327,7 @@ class ZohoClient
      * @param string|null $sortByOrder
      * @param int $page
      * @param int $perPage
-     * @return \ZCRMRecord[]
+     * @return \BulkAPIResponse
      */
     public function getRelatedRecords($module, $id, $relatedListAPIName, $sortByField = null, $sortByOrder = null, $page = 1, $perPage = 200)
     {
@@ -335,8 +335,17 @@ class ZohoClient
          * @var $zcrmRecordIns \ZCRMRecord
          */
         $zcrmRecordIns  = $this->getRecordById($module, $id);
-        $bulkAPIResponse = $zcrmRecordIns->getRelatedListRecords($relatedListAPIName, $sortByField, $sortByOrder , $page, $perPage);
-        return $bulkAPIResponse->getData();
+        try{
+            $bulkAPIResponse = $zcrmRecordIns->getRelatedListRecords($relatedListAPIName, $sortByField, $sortByOrder , $page, $perPage);
+        } catch(\ZCRMException $exception){
+            if(ExceptionZohoClient::exceptionCodeFormat($exception->getExceptionCode()) === ExceptionZohoClient::EXCEPTION_CODE_NO__CONTENT){
+                return null;
+            }
+            var_dump($exception->getExceptionCode());
+            throw $exception;
+        }
+
+        return $bulkAPIResponse;
     }
 
     /**
@@ -450,16 +459,16 @@ class ZohoClient
     /**
      * Implements updateRelatedRecords API method.
      * @param string $module
-     * @param string $relatedModule
      * @param string $recordId
+     * @param string $relatedModule
      * @param string $relatedRecordId
      * @param array $fieldsValue
      * @return \APIResponse
      */
-    public function updateRelatedRecords(string $module, string $relatedModule, string $recordId, string $relatedRecordId,  array $fieldsValue)
+    public function updateRelatedRecords(string $module, string $recordId,  string $relatedModule, string $relatedRecordId,  array $fieldsValue = [])
     {
-        $parentRecord=\ZCRMRecord::getInstance($module, $recordId);
-        $junctionRecord=\ZCRMJunctionRecord::getInstance($relatedModule, $relatedRecordId);
+        $parentRecord= $this->getRecordById($module, $recordId);
+        $junctionRecord= \ZCRMJunctionRecord::getInstance($relatedModule, $relatedRecordId);
         foreach ($fieldsValue as $fieldApiName => $value){
             $junctionRecord->setRelatedData($fieldApiName, $value);
         }

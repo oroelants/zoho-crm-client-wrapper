@@ -234,4 +234,27 @@ class ZohoClientTest extends TestCase
         $this->assertNotNull($conversionResult2[\APIConstants::DEALS]);
     }
 
+    public function testUpdateRelatedRecords(){
+        $account = \ZCRMRecord::getInstance('Accounts', null);
+        $account->setFieldValue('Account_Name','New Account Related List');
+        $this->zohoClient->insertRecords('Accounts', [$account]);
+        $this->assertNotNull($account->getEntityId());
+        $product1 = \ZCRMRecord::getInstance('Products', null);
+        $product1->setFieldValue('Product_Name','New Product1 Doe');
+        $product1->setFieldValue('Unit_Price', rand(20, 42));
+        $product2 = \ZCRMRecord::getInstance('Products', null);
+        $product2->setFieldValue('Product_Name','New Product2 Doe');
+        $this->zohoClient->insertRecords('Products', [$product1, $product2]);
+        $this->assertNotNull($product1->getEntityId());
+        $this->assertNotNull($product2->getEntityId());
+        $relatedLists = $this->zohoClient->getRelatedRecords('Accounts', $account->getEntityId(),'Products');
+        $this->assertNull($relatedLists);
+        $this->zohoClient->updateRelatedRecords('Accounts', $account->getEntityId(), 'Products', $product1->getEntityId());
+        $valueFields = ['Unit_Price' => rand(5, 50)];
+        $this->zohoClient->updateRelatedRecords('Accounts', $account->getEntityId(), 'Products', $product2->getEntityId(), $valueFields);
+        $relatedLists = $this->zohoClient->getRelatedRecords('Accounts', $account->getEntityId(),'Products');
+        $this->assertCount(2, $relatedLists->getData());
+
+    }
+
 }

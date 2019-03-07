@@ -65,7 +65,5 @@ Read how to change the client configuration - read [Configuration](https://githu
 
 TODO:
 - Unit Test
-    - convertLead
-    - updateRelatedRecords	
     - uploadFile	
     - downloadFile
