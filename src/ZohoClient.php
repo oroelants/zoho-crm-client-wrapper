@@ -5,7 +5,6 @@ use Wabel\Zoho\CRM\Exceptions\ExceptionZohoClient;
 
 /**
  * Client for provide interface with Zoho CRM.
- *
  */
 class ZohoClient
 {
@@ -22,7 +21,8 @@ class ZohoClient
 
     /**
      * ZohoClient constructor.
-     * @param array $configurations
+     *
+     * @param array  $configurations
      *             ['client_id' => '',
      *              'client_secret' => '',
      *             'redirect_uri' => '',
@@ -61,7 +61,8 @@ class ZohoClient
     }
 
 
-    public function initCLient() :void{
+    public function initCLient() :void
+    {
         \ZCRMRestClient::initialize($this->configurations);
     }
 
@@ -69,7 +70,8 @@ class ZohoClient
      * @return \ZohoOAuthClient
      * @throws \ZohoOAuthException
      */
-    public function getZohoOAuthClient(){
+    public function getZohoOAuthClient()
+    {
         $this->initCLient();
         return \ZohoOAuth::getClientInstance();
     }
@@ -77,36 +79,40 @@ class ZohoClient
     /**
      * @return \ZCRMRestClient
      */
-    public function getZCRMRestClient(){
+    public function getZCRMRestClient()
+    {
         $this->initCLient();
         return \ZCRMRestClient::getInstance();
     }
 
     /**
-     * @param string $grantToken
+     * @param  string $grantToken
      * @return \ZohoOAuthTokens
      * @throws \ZohoOAuthException
      */
-    public function generateAccessToken(string $grantToken){
+    public function generateAccessToken(string $grantToken)
+    {
         $client = $this->getZohoOAuthClient();
         return $client->generateAccessToken($grantToken);
     }
 
     /**
-     * @param string $refreshToken
-     * @param string $userIdentifier
+     * @param  string $refreshToken
+     * @param  string $userIdentifier
      * @return mixed
      */
-    public function generateAccessTokenFromRefreshToken(string $refreshToken, string $userIdentifier){
+    public function generateAccessTokenFromRefreshToken(string $refreshToken, string $userIdentifier)
+    {
         $oAuthClient = $this->getZohoOAuthClient();
-        return $oAuthClient->generateAccessTokenFromRefreshToken($refreshToken,$userIdentifier);
+        return $oAuthClient->generateAccessTokenFromRefreshToken($refreshToken, $userIdentifier);
     }
 
     /**
      * Implements convertLead API method.
-     * @param string $leadId
-     * @param string|null $dealId
-     * @param string|null $userId
+     *
+     * @param  string      $leadId
+     * @param  string|null $dealId
+     * @param  string|null $userId
      * @return array
      */
     public function convertLead($leadId, $dealId = null, $userId = null)
@@ -114,11 +120,11 @@ class ZohoClient
         $record = $this->getRecordById("Leads", $leadId);
         $userInstance = null;
         $recordDeal = null;
-        if($dealId){
+        if($dealId) {
             $modIns = $this->getModule("Deals");
             $recordDeal = $modIns->getRecord($dealId)->getData();
         }
-        if($userId){
+        if($userId) {
             $userInstance = $this->getUser($userId);
         }
         return $record->convert($recordDeal, $userInstance);
@@ -140,7 +146,7 @@ class ZohoClient
             $response = $this->getModule($module)->getAllFields();
             return $response->getData();
         } catch(\ZCRMException $exception){
-            if($exception->getExceptionCode() === ExceptionZohoClient::EXCEPTION_CODE_NO__CONTENT){
+            if(ExceptionZohoClient::exceptionCodeFormat($exception->getExceptionCode()) === ExceptionZohoClient::EXCEPTION_CODE_NO__CONTENT) {
                 return null;
             }
             throw $exception;
@@ -150,14 +156,14 @@ class ZohoClient
     /**
      * Implements deleteRecords API method.
      *
-     * @param string $module
-     * @param string|array $ids     Id of the record
+     * @param  string       $module
+     * @param  string|array $ids    Id of the record
      * @return \EntityResponse[]
      */
     public function deleteRecords($module, $ids)
     {
         $zcrmModuleIns = $this->getModule($module);
-        if(is_string($ids)){
+        if(is_string($ids)) {
             $ids = [$ids];
         }
         /**
@@ -171,8 +177,8 @@ class ZohoClient
     /**
      * Implements getRecordById API method.
      *
-     * @param string $module The module to use
-     * @param string $id     Id of the record or a list of IDs separated by a semicolon
+     * @param  string $module The module to use
+     * @param  string $id     Id of the record or a list of IDs separated by a semicolon
      * @return \ZCRMRecord
      */
     public function getRecordById($module, $id)
@@ -185,13 +191,14 @@ class ZohoClient
     }
     /**
      * Implements getRecords API method.
-     * @param string $module
-     * @param string|null $cvId
-     * @param string|null $sortColumnString
-     * @param string|null $sortOrderString
-     * @param int $fromIndex
-     * @param int $toIndex
-     * @param null $header
+     *
+     * @param  string      $module
+     * @param  string|null $cvId
+     * @param  string|null $sortColumnString
+     * @param  string|null $sortOrderString
+     * @param  int         $fromIndex
+     * @param  int         $toIndex
+     * @param  null        $header
      * @return \ZCRMRecord[]
      */
     public function getRecords($module, $cvId = null, $sortColumnString = null, $sortOrderString = null, $fromIndex = 1, $toIndex = 200, $header = null)
@@ -201,27 +208,27 @@ class ZohoClient
         /**
          * @var $bulkAPIResponse \BulkAPIResponse
          */
-        $bulkAPIResponse = $zcrmModuleIns->getRecords($cvId,$sortColumnString, $sortOrderString, $fromIndex, $toIndex, $header);
+        $bulkAPIResponse = $zcrmModuleIns->getRecords($cvId, $sortColumnString, $sortOrderString, $fromIndex, $toIndex, $header);
         return $bulkAPIResponse->getData();
     }
 
     /**
      * Implements getDeletedRecords by rewrite MassEntityAPIHandler::getDeletedRecords API method.
-     * @param string $module
-     * @param string $typeOfRecord
-     * @param \DateTimeInterface|null $lastModifiedTime
-     * @param int $page
-     * @param int $perPage
+     *
+     * @param  string                  $module
+     * @param  string                  $typeOfRecord
+     * @param  \DateTimeInterface|null $lastModifiedTime
+     * @param  int                     $page
+     * @param  int                     $perPage
      * @return \BulkAPIResponse|null
      * @throws \ZCRMException
-     * @see \ZCRMModule::getAllDeletedRecords()
-     * @see \ZCRMModule::getRecycleBinRecords()
-     * @see \ZCRMModule::getPermanentlyDeletedRecords()
-     * @see \MassEntityAPIHandler::getAllDeletedRecords()
-     * @see \MassEntityAPIHandler::getRecycleBinRecords()
-     * @see \MassEntityAPIHandler::getPermanentlyDeletedRecords()
-     * @see \MassEntityAPIHandler::getDeletedRecords()
-     *
+     * @see    \ZCRMModule::getAllDeletedRecords()
+     * @see    \ZCRMModule::getRecycleBinRecords()
+     * @see    \ZCRMModule::getPermanentlyDeletedRecords()
+     * @see    \MassEntityAPIHandler::getAllDeletedRecords()
+     * @see    \MassEntityAPIHandler::getRecycleBinRecords()
+     * @see    \MassEntityAPIHandler::getPermanentlyDeletedRecords()
+     * @see    \MassEntityAPIHandler::getDeletedRecords()
      */
     public function getDeletedRecords($module, $typeOfRecord = "all", \DateTimeInterface $lastModifiedTime = null, $page = 1, $perPage= 200)
     {
@@ -229,15 +236,15 @@ class ZohoClient
         {
             $zcrmModuleIns = $this->getModule($module);
             $massEntityAPIHandler = \MassEntityAPIHandler::getInstance($zcrmModuleIns);
-            if($lastModifiedTime){
+            if($lastModifiedTime) {
 
-                $massEntityAPIHandler->addHeader('If-Modified-Since',$lastModifiedTime->format(\DateTime::ATOM));
+                $massEntityAPIHandler->addHeader('If-Modified-Since', $lastModifiedTime->format(\DateTime::ATOM));
             }
             $massEntityAPIHandler->addParam('page', $page);
             $massEntityAPIHandler->addParam('per_page', $perPage);
             $massEntityAPIHandler->setUrlPath($zcrmModuleIns->getAPIName()."/deleted");
             $massEntityAPIHandler->setRequestMethod(\APIConstants::REQUEST_METHOD_GET);
-            $massEntityAPIHandler->addHeader("Content-Type","application/json");
+            $massEntityAPIHandler->addHeader("Content-Type", "application/json");
             $massEntityAPIHandler->addParam("type", $typeOfRecord);
             /**
              * @var $responseInstance \BulkAPIResponse
@@ -246,13 +253,13 @@ class ZohoClient
 
             $responseJSON=$responseInstance->getResponseJSON();
             $trashRecordList=array();
-            if(isset($responseJSON['data'])){
+            if(isset($responseJSON['data'])) {
                 $trashRecords=$responseJSON["data"];
                 foreach ($trashRecords as $trashRecord)
                 {
-                    $trashRecordInstance = \ZCRMTrashRecord::getInstance($trashRecord['type'],$trashRecord['id']);
-                    $massEntityAPIHandler->setTrashRecordProperties($trashRecordInstance,$trashRecord);
-                    array_push($trashRecordList,$trashRecordInstance);
+                    $trashRecordInstance = \ZCRMTrashRecord::getInstance($trashRecord['type'], $trashRecord['id']);
+                    $massEntityAPIHandler->setTrashRecordProperties($trashRecordInstance, $trashRecord);
+                    array_push($trashRecordList, $trashRecordInstance);
                 }
             }
 
@@ -261,7 +268,7 @@ class ZohoClient
         }
         catch (\ZCRMException $exception)
         {
-            if(strtolower($exception->getExceptionCode()) === strtolower(ExceptionZohoClient::EXCEPTION_CODE_NO__CONTENT)){
+            if(ExceptionZohoClient::exceptionCodeFormat($exception->getExceptionCode()) === ExceptionZohoClient::EXCEPTION_CODE_NO__CONTENT) {
                 return null;
             } else{
                 \APIExceptionHandler::logException($exception);
@@ -272,14 +279,14 @@ class ZohoClient
     }
 
     /**
-     * @param string $module
-     * @param \DateTimeInterface|null $lastModifiedTime
-     * @param int $page
-     * @param int $perPage
+     * @param  string                  $module
+     * @param  \DateTimeInterface|null $lastModifiedTime
+     * @param  int                     $page
+     * @param  int                     $perPage
      * @return \BulkAPIResponse
      * @throws \ZCRMException
-     * @see \ZCRMModule::getPermanentlyDeletedRecords()
-     * @see \MassEntityAPIHandler::getPermanentlyDeletedRecords()
+     * @see    \ZCRMModule::getPermanentlyDeletedRecords()
+     * @see    \MassEntityAPIHandler::getPermanentlyDeletedRecords()
      */
     public function getPermanentlyDeletedRecords($module, \DateTimeInterface $lastModifiedTime = null, $page = 1, $perPage= 200)
     {
@@ -288,14 +295,14 @@ class ZohoClient
 
 
     /**
-     * @param string $module
-     * @param \DateTimeInterface|null $lastModifiedTime
-     * @param int $page
-     * @param int $perPage
+     * @param  string                  $module
+     * @param  \DateTimeInterface|null $lastModifiedTime
+     * @param  int                     $page
+     * @param  int                     $perPage
      * @return \BulkAPIResponse
      * @throws \ZCRMException
-     * @see \ZCRMModule::getAllDeletedRecords()
-     * @see \MassEntityAPIHandler::getAllDeletedRecords()
+     * @see    \ZCRMModule::getAllDeletedRecords()
+     * @see    \MassEntityAPIHandler::getAllDeletedRecords()
      */
     public function getAllDeletedRecords($module, \DateTimeInterface $lastModifiedTime = null, $page = 1, $perPage= 200)
     {
@@ -304,14 +311,14 @@ class ZohoClient
 
 
     /**
-     * @param string $module
-     * @param \DateTimeInterface|null $lastModifiedTime
-     * @param int $page
-     * @param int $perPage
+     * @param  string                  $module
+     * @param  \DateTimeInterface|null $lastModifiedTime
+     * @param  int                     $page
+     * @param  int                     $perPage
      * @return \BulkAPIResponse
      * @throws \ZCRMException
-     * @see \ZCRMModule::getRecycleBinRecords()
-     * @see \MassEntityAPIHandler::getRecycleBinRecords()
+     * @see    \ZCRMModule::getRecycleBinRecords()
+     * @see    \MassEntityAPIHandler::getRecycleBinRecords()
      */
     public function getRecycleBinRecords($module, \DateTimeInterface $lastModifiedTime = null, $page = 1, $perPage= 200)
     {
@@ -320,14 +327,15 @@ class ZohoClient
 
     /**
      * Implements get Related List Records API method.
-     * @param $module
-     * @param $id
-     * @param string $relatedListAPIName
-     * @param string|null $sortByField
-     * @param string|null $sortByOrder
-     * @param int $page
-     * @param int $perPage
-     * @return \ZCRMRecord[]
+     *
+     * @param  $module
+     * @param  $id
+     * @param  string      $relatedListAPIName
+     * @param  string|null $sortByField
+     * @param  string|null $sortByOrder
+     * @param  int         $page
+     * @param  int         $perPage
+     * @return \BulkAPIResponse
      */
     public function getRelatedRecords($module, $id, $relatedListAPIName, $sortByField = null, $sortByOrder = null, $page = 1, $perPage = 200)
     {
@@ -335,36 +343,47 @@ class ZohoClient
          * @var $zcrmRecordIns \ZCRMRecord
          */
         $zcrmRecordIns  = $this->getRecordById($module, $id);
-        $bulkAPIResponse = $zcrmRecordIns->getRelatedListRecords($relatedListAPIName, $sortByField, $sortByOrder , $page, $perPage);
-        return $bulkAPIResponse->getData();
+        try{
+            $bulkAPIResponse = $zcrmRecordIns->getRelatedListRecords($relatedListAPIName, $sortByField, $sortByOrder, $page, $perPage);
+        } catch(\ZCRMException $exception){
+            if(ExceptionZohoClient::exceptionCodeFormat($exception->getExceptionCode()) === ExceptionZohoClient::EXCEPTION_CODE_NO__CONTENT) {
+                return null;
+            }
+            var_dump($exception->getExceptionCode());
+            throw $exception;
+        }
+
+        return $bulkAPIResponse;
     }
 
     /**
      * Implements searchRecords API method.
      * For unit tests or search after creation of entities you have to wait indexing from zoho.
-     * @param $module
-     * @param mixed $searchCondition
-     * @param string $type Type of search(among phone, email, criteria, word).By default  search by word
-     * @param int $page
-     * @param int $perPage
+     *
+     * @param  $module
+     * @param  mixed  $searchCondition
+     * @param  string $type            Type of search(among phone, email, criteria, word).By default  search by word
+     * @param  int    $page
+     * @param  int    $perPage
      * @return \ZCRMRecord[]
      */
     public function searchRecords($module, $searchCondition, string $type = 'word', $page = 1, $perPage = 200)
     {
         $zcrmModuleIns = $this->getModule($module);
-        if($type === 'word'){
-            $bulkAPIResponse = $zcrmModuleIns->searchRecords($searchCondition,$page, $perPage);
+        if($type === 'word') {
+            $bulkAPIResponse = $zcrmModuleIns->searchRecords($searchCondition, $page, $perPage);
         } else{
             $typeSearchMethod = "searchRecordsBy".ucfirst($type);
-            $bulkAPIResponse = $zcrmModuleIns->{"$typeSearchMethod"}($searchCondition,$page, $perPage);
+            $bulkAPIResponse = $zcrmModuleIns->{"$typeSearchMethod"}($searchCondition, $page, $perPage);
         }
         return $bulkAPIResponse->getData();
     }
 
     /**
      * Implements getUser API method.
-     * @param string|null $orgName
-     * @param string|null $orgId
+     *
+     * @param  string|null $orgName
+     * @param  string|null $orgId
      * @return \ZCRMUser
      */
     public function getUser($userId ,$orgName = null, $orgId = null)
@@ -380,9 +399,10 @@ class ZohoClient
 
     /**
      * Implements getUsers API method.
-     * @param string $type The type of users you want retrieve (among AllUsers, ActiveUsers, DesactiveUsers, AdminUsers and ActiveConfirmedAdmins)
-     * @param string|null $orgName
-     * @param string|null $orgId
+     *
+     * @param  string      $type    The type of users you want retrieve (among AllUsers, ActiveUsers, DesactiveUsers, AdminUsers and ActiveConfirmedAdmins)
+     * @param  string|null $orgName
+     * @param  string|null $orgId
      * @return \ZCRMUser[]
      */
     public function getUsers($type = 'AllUsers',$orgName = null, $orgId = null)
@@ -398,8 +418,9 @@ class ZohoClient
 
     /**
      * Implements insert or update Records API method.
-     * @param $module
-     * @param array|\ZCRMRecord[] $records
+     *
+     * @param  $module
+     * @param  array|\ZCRMRecord[] $records
      * @return \EntityResponse[]
      */
     public function upsertRecords($module, array $records)
@@ -415,9 +436,10 @@ class ZohoClient
 
     /**
      * Implements insertRecords API method.
-     * @param $module
-     * @param \ZCRMRecord[] $records
-     * @param null|bool $trigger
+     *
+     * @param  $module
+     * @param  \ZCRMRecord[] $records
+     * @param  null|bool     $trigger
      * @return \EntityResponse[]
      */
     public function insertRecords($module, array $records,  ?bool $trigger = null)
@@ -432,9 +454,10 @@ class ZohoClient
 
     /**
      * Implements updateRecords API method.
-     * @param string $module
-     * @param \ZCRMRecord[] $records
-     * @param null|bool $trigger
+     *
+     * @param  string        $module
+     * @param  \ZCRMRecord[] $records
+     * @param  null|bool     $trigger
      * @return \EntityResponse[]
      */
     public function updateRecords(string $module, array $records,  ?bool $trigger = null)
@@ -449,17 +472,18 @@ class ZohoClient
 
     /**
      * Implements updateRelatedRecords API method.
-     * @param string $module
-     * @param string $relatedModule
-     * @param string $recordId
-     * @param string $relatedRecordId
-     * @param array $fieldsValue
+     *
+     * @param  string $module
+     * @param  string $recordId
+     * @param  string $relatedModule
+     * @param  string $relatedRecordId
+     * @param  array  $fieldsValue
      * @return \APIResponse
      */
-    public function updateRelatedRecords(string $module, string $relatedModule, string $recordId, string $relatedRecordId,  array $fieldsValue)
+    public function updateRelatedRecords(string $module, string $recordId,  string $relatedModule, string $relatedRecordId,  array $fieldsValue = [])
     {
-        $parentRecord=\ZCRMRecord::getInstance($module, $recordId);
-        $junctionRecord=\ZCRMJunctionRecord::getInstance($relatedModule, $relatedRecordId);
+        $parentRecord= $this->getRecordById($module, $recordId);
+        $junctionRecord= \ZCRMJunctionRecord::getInstance($relatedModule, $relatedRecordId);
         foreach ($fieldsValue as $fieldApiName => $value){
             $junctionRecord->setRelatedData($fieldApiName, $value);
         }
@@ -468,14 +492,15 @@ class ZohoClient
 
     /**
      * Implements uploadFile API method.
-     * @param string $module
-     * @param string $recordId
-     * @param string $filepath
+     *
+     * @param  string $module
+     * @param  string $recordId
+     * @param  string $filepath
      * @return \APIResponse
      */
     public function uploadFile(string $module, string $recordId, string $filepath)
     {
-        $record = \ZCRMRecord::getInstance($module, $recordId);
+        $record = $this->getRecordById($module, $recordId);
         return $record->uploadAttachment($filepath);
     }
 
@@ -483,24 +508,27 @@ class ZohoClient
 
     /**
      * Implements downloadFile API method.
-     * @param string $module
-     * @param string $recordId
-     * @param string $attachmentId
+     *
+     * @param  string $module
+     * @param  string $recordId
+     * @param  string $attachmentId
      * @return \FileAPIResponse
      */
     public function downloadFile(string $module, string $recordId, string $attachmentId)
     {
-        $record = \ZCRMRecord::getInstance($module, $recordId);
+        $record = $this->getRecordById($module, $recordId);
         return $record->downloadAttachment($attachmentId);
     }
 
 
     /**
      * Returns a module from Zoho.
+     *
      * @param  string $moduleName
      * @return \ZCRMModule
      */
-    public function getModule(string $moduleName){
+    public function getModule(string $moduleName)
+    {
         $this->initCLient();
         return \ZCRMModule::getInstance($moduleName);
     }
@@ -508,6 +536,7 @@ class ZohoClient
 
     /**
      * Returns a list of modules from Zoho.
+     *
      * @return \ZCRMModule[]
      */
     public function getModules(): array
