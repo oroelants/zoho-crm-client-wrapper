@@ -22,14 +22,15 @@ class ZohoClientTest extends TestCase
                 'applicationLogFilePath' => getenv('applicationLogFilePath'),
                 'persistence_handler_class' => getenv('persistence_handler_class'),
                 'token_persistence_path' => getenv('token_persistence_path'),
-            ]
+            ],
+            getenv('timeZone')
         );
     }
 
     public function testGetModules(){
         $allModules = $this->zohoClient->getModules();
-        $this->assertIsArray($allModules);
-        $this->assertInstanceOf('\ZCRMModule',array_shift($allModules));
+        $this->assertNotEmpty($allModules);
+        $this->assertContainsOnlyInstancesOf('\ZCRMModule', $allModules);
     }
 
     public function testGetModule(){
@@ -39,14 +40,14 @@ class ZohoClientTest extends TestCase
 
     public function testGetFields(){
         $allFields = $this->zohoClient->getFields('Accounts');
-        $this->assertIsArray($allFields);
-        $this->assertInstanceOf('\ZCRMField',array_shift($allFields));
+        $this->assertNotEmpty($allFields);
+        $this->assertContainsOnlyInstancesOf('\ZCRMField', $allFields);
     }
 
     public function testGetAllUsers(){
         $users = $this->zohoClient->getUsers();
-        $this->assertIsArray($users);
-        $this->assertInstanceOf('\ZCRMUser',array_shift($users));
+        $this->assertNotEmpty($users);
+        $this->assertContainsOnlyInstancesOf('\ZCRMUser', $users);
     }
 
     public function testGetUser(){
@@ -70,7 +71,7 @@ class ZohoClientTest extends TestCase
         $lead2->setFieldValue('Company','Company Lead 2');
         $lead3->setFieldValue('Company','Company Lead 3');
         $response = $this->zohoClient->insertRecords('Leads',[$lead1, $lead2, $lead3]);
-        $this->assertIsArray($response);
+        $this->assertNotEmpty($response);
         $this->assertNotNull($lead1->getEntityId());
         $this->assertNotNull($lead2->getEntityId());
         $this->assertNotNull($lead3->getEntityId());
@@ -101,7 +102,7 @@ class ZohoClientTest extends TestCase
         $records = $this->zohoClient->getRecords('Leads', null, 'Created_Time', 'desc', 1, 4,
             ['If-Modified-Since' => (new \DateTime())->sub(new \DateInterval('PT2M'))->format(\DateTime::ATOM)]);
         $firstEntity = array_shift($records);
-        $this->assertInstanceOf('\ZCRMRecord', $firstEntity);
+        $this->assertContainsOnlyInstancesOf('\ZCRMRecord', $records);
         $this->assertContains($firstEntity->getEntityId(), array_map(function (\ZCRMRecord $leadEntity){
             return $leadEntity->getEntityId();
         }, $leads));
@@ -114,7 +115,7 @@ class ZohoClientTest extends TestCase
      */
     public function testDeleteRecords(array $leads){
         $zohoEntitiesReponse = $this->zohoClient->deleteRecords('Leads',[$leads[0]->getEntityId(),$leads[1]->getEntityId()]);
-        $this->assertIsArray($zohoEntitiesReponse);
+        $this->assertNotEmpty($zohoEntitiesReponse);
         $firstEntity = array_shift($zohoEntitiesReponse);
         $this->assertInstanceOf('\ZCRMRecord',$firstEntity->getData());
         $this->assertEquals('success', $firstEntity->getStatus());
@@ -139,7 +140,7 @@ class ZohoClientTest extends TestCase
      */
     public function testDeleteRecord(\ZCRMRecord $lead){
         $zohoEntitiesReponse = $this->zohoClient->deleteRecords('Leads', $lead->getEntityId());
-        $this->assertIsArray($zohoEntitiesReponse);
+        $this->assertNotEmpty($zohoEntitiesReponse);
         $firstEntity = array_shift($zohoEntitiesReponse);
         $this->assertInstanceOf('\ZCRMRecord',$firstEntity->getData());
         $this->assertEquals($lead->getEntityId(), $firstEntity->getDetails()['id']);
@@ -152,15 +153,11 @@ class ZohoClientTest extends TestCase
      */
     public function testGetDeletedRecords(\ZCRMRecord $lead){
         $trashEntities = $this->zohoClient->getDeletedRecords('Leads');
-        $this->assertIsArray($trashEntities);
-        /**
-         * @var $firstEntity \ZCRMTrashRecord
-         */
-        $firstEntity = array_shift($trashEntities);
-        $this->assertInstanceOf('\ZCRMTrashRecord',$firstEntity);
+        $this->assertNotEmpty($trashEntities);
+        $this->assertContainsOnlyInstancesOf('\ZCRMTrashRecord', $trashEntities->getData());
         $this->assertContains($lead->getFieldValue('Last_Name'), array_map(function (\ZCRMTrashRecord $trashRecord){
             return $trashRecord->getDisplayName();
-        }, $trashEntities));
+        }, $trashEntities->getData()));
     }
 
     /**
@@ -177,7 +174,7 @@ class ZohoClientTest extends TestCase
         $lead5->setFieldValue('Company','Company Lead 5');
         $lead6->setFieldValue('Company','Company Lead 6');
         $response = $this->zohoClient->upsertRecords('Leads', [$lead4,$lead5]);
-        $this->assertIsArray($response);
+        $this->assertNotEmpty($response);
         $this->assertNotNull($lead4->getEntityId());
         $this->assertNotNull($lead5->getEntityId());
         $this->assertNull($lead6->getEntityId());
@@ -185,7 +182,7 @@ class ZohoClientTest extends TestCase
         $lead4->setFieldValue('Last_Name','NewLead 4-1');
         $lead4->setFieldValue('Company','Company Lead 4-1');
         $response2 = $this->zohoClient->upsertRecords('Leads', [$lead4,$lead6]);
-        $this->assertIsArray($response);
+        $this->assertNotEmpty($response);
         $this->assertEquals($lastIdLead4, $response2[0]->getData()->getEntityId());
         $this->assertNotNull($lead6->getEntityId());
         $this->zohoClient->deleteRecords('Leads',[$lead4->getEntityId(),$lead5->getEntityId(),$lead6->getEntityId()]);
