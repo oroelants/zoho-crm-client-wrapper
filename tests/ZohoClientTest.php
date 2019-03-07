@@ -189,4 +189,49 @@ class ZohoClientTest extends TestCase
     }
 
 
+    public function testConvertLeadNoDeal(){
+        $lead = \ZCRMRecord::getInstance('Leads', null);
+        $lead->setFieldValue('Last_Name','Lead To Convert');
+        $lead->setFieldValue('Company','Company To Convert');
+        $this->zohoClient->insertRecords('Leads', [$lead]);
+        $this->assertNotNull($lead->getEntityId());
+        $conversionResult = $this->zohoClient->convertLead($lead->getEntityId(),null, getenv('userid_test'));
+        $this->assertArrayHasKey(\APIConstants::ACCOUNTS, $conversionResult);
+        $this->assertArrayHasKey(\APIConstants::CONTACTS, $conversionResult);
+    }
+
+    public function testConvertLeadWithDeal(){
+        $lead2 = \ZCRMRecord::getInstance('Leads', null);
+        $lead2->setFieldValue('Last_Name','Contact LastLead To Convert 2');
+        $lead2->setFieldValue('First_Name','Contact FirstLead To Convert 2');
+        $lead2->setFieldValue('Company','Account Lead To Convert 2');
+        $this->zohoClient->insertRecords('Leads', [$lead2]);
+        $this->assertNotNull($lead2->getEntityId());
+        $account = \ZCRMRecord::getInstance('Accounts', null);
+        $account->setFieldValue('Account_Name','Account Lead To Convert 2');
+        $this->zohoClient->insertRecords('Accounts', [$account]);
+        $this->assertNotNull($account->getEntityId());
+        $campaign = \ZCRMRecord::getInstance('Campaigns', null);
+        $campaign->setFieldValue('Campaign_Name', 'Campaign Test Lead Convert');
+        $campaign->setFieldValue('Type', getenv('campaign_type'));
+        $this->zohoClient->insertRecords('Campaigns', [$campaign]);
+        $this->assertNotNull($campaign->getEntityId());
+        $deal = \ZCRMRecord::getInstance('Deals', null);
+        $deal->setFieldValue('Deal_Name','Deal Lead To Convert 2');
+        $deal->setFieldValue('Closing_Date',(new \DateTime())->sub(new \DateInterval('P1D'))->format('Y-m-d'));
+        $deal->setFieldValue('Stage', getenv('deal_status'));
+        $deal->setFieldValue('Account_Name', $account);
+        $deal->setFieldValue('Amount', rand(10000,20000));
+        $deal->setFieldValue('Campaign_Source', $campaign);
+        $this->zohoClient->insertRecords('Deals', [$deal]);
+        $this->assertNotNull($deal->getEntityId());
+        $conversionResult2 = $this->zohoClient->convertLead($lead2->getEntityId(), $deal->getEntityId(), getenv('userid_test'));
+        $this->assertArrayHasKey(\APIConstants::ACCOUNTS, $conversionResult2);
+        $this->assertArrayHasKey(\APIConstants::CONTACTS, $conversionResult2);
+        $this->assertArrayHasKey(\APIConstants::DEALS, $conversionResult2);
+        $this->assertNotNull($conversionResult2[\APIConstants::ACCOUNTS]);
+        $this->assertNotNull($conversionResult2[\APIConstants::CONTACTS]);
+        $this->assertNotNull($conversionResult2[\APIConstants::DEALS]);
+    }
+
 }
