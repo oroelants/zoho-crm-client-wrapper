@@ -46,7 +46,7 @@ Usage:
 
 ```sh
 # Command to generate access token
-$ console zohocrm:cmd generate-access-token xxxxxxx
+$ console zohocrm:client generate-access-token xxxxxxx
 ```
 
 Setting up unit tests

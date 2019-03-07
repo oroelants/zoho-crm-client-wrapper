@@ -29,6 +29,7 @@ class ZohoCRMCommand extends Command
 
     /**
      * ZohoCRMCommand constructor.
+     *
      * @param ZohoClient $zohoClient
      */
     public function __construct(ZohoClient $zohoClient, MultiLogger $logger)
@@ -41,11 +42,12 @@ class ZohoCRMCommand extends Command
     protected function configure()
     {
         $this
-            ->setName('zohocrm:cmd')
-            ->addArgument('action',InputArgument::OPTIONAL,'generate-access-token : Generate access token')
-            ->addArgument('token',InputArgument::OPTIONAL,'Token')
+            ->setName('zohocrm:client')
+            ->addArgument('action', InputArgument::OPTIONAL, 'generate-access-token : Generate access token|refresh-access-token: Refresh access token')
+            ->addArgument('token', InputArgument::OPTIONAL, 'Token')
             ->setDescription('Zoho CRM Command by using API v2')
-            ->setHelp(<<<EOT
+            ->setHelp(
+                <<<EOT
 Use method from the Zoho Client
 EOT
             );
@@ -55,36 +57,38 @@ EOT
         $this->logger->addLogger(new DateTimeFormatter(new ConsoleLogger($output)));
         if ($input->getArgument('action')) {
             switch ($input->getArgument('action')){
-                case 'generate-access-token':
-                    $this->generateAccessToken($input->getArgument('token'));
-                    break;
-                case 'refresh-access-token':
-                    $this->refreshAccessToken();
-                    break;
+            case 'generate-access-token':
+                $this->generateAccessToken($input->getArgument('token'));
+                break;
+            case 'refresh-access-token':
+                $this->refreshAccessToken();
+                break;
             }
         }
     }
 
-    public function generateAccessToken(string $grantAccessToken){
+    public function generateAccessToken(string $grantAccessToken)
+    {
         $this->logger->info('Start - generate Access Token');
         $zohoTokenInformation =$this->zohoClient->generateAccessToken($grantAccessToken);
-        $this->logger->debug('{information}',['information' => print_r($zohoTokenInformation,true)]);
+        $this->logger->debug('{information}', ['information' => print_r($zohoTokenInformation, true)]);
         $this->logger->info('End - generate Access Token');
     }
 
     /**
      * @throws \ZohoOAuthException
      */
-    public function refreshAccessToken(){
+    public function refreshAccessToken()
+    {
         $this->logger->info('Start - Refresh Access Token');
         $currentUserEmail = $this->zohoClient->getConfigurations()['currentUserEmail'];
         $token = $this->zohoClient->getZohoOAuthClient()->getAccessToken($currentUserEmail);
-        if($token){
+        if ($token) {
             $persistence = \ZohoOAuth::getPersistenceHandlerInstance();
             $token = $persistence->getOAuthTokens(ZOHO_CRM_CLIENT_CURRENT_USER_EMAIL);
-            $this->logger->debug('{information}',['information' => print_r($token,true)]);
+            $this->logger->debug('{information}', ['information' => print_r($token, true)]);
             $this->logger->info('End - Refresh Access token');
-        } else{
+        } else {
             $this->logger->warning('End - No Refresh Access token');
         }
 
