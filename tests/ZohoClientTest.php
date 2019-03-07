@@ -256,5 +256,28 @@ class ZohoClientTest extends TestCase
         $this->assertCount(2, $relatedLists->getData());
 
     }
+//
+    public function testUploadFile(){
+        $account = \ZCRMRecord::getInstance('Accounts', null);
+        $account->setFieldValue('Account_Name','Account To Upload File');
+        $this->zohoClient->insertRecords('Accounts', [$account]);
+        $this->assertNotNull($account->getEntityId());
+        $response = $this->zohoClient->uploadFile('Accounts', $account->getEntityId(), getenv('filepath_upload'));
+        $this->assertNotNull($response->getDetails());
+        $this->assertArrayHasKey('id', $response->getDetails());
+        $this->assertInstanceOf('\ZCRMAttachment', $response->getData());
+        return $response->getData();
+    }
+
+    /**
+     * @depends testUploadFile
+     * @param \ZCRMAttachment fileUploaded
+     */
+    public function testDownloadFile(\ZCRMAttachment $fileUploaded){
+        $fileApiResponse = $this->zohoClient->downloadFile('Accounts', $fileUploaded->getParentRecord()->getEntityId(), $fileUploaded->getId());
+        $filename= pathinfo(getenv('filepath_upload'), PATHINFO_BASENAME);
+        $this->assertEquals($filename, $fileApiResponse->getFileName());
+        $this->assertNotNull($fileApiResponse->getFileContent());
+    }
 
 }

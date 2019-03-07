@@ -484,7 +484,7 @@ class ZohoClient
      */
     public function uploadFile(string $module, string $recordId, string $filepath)
     {
-        $record = \ZCRMRecord::getInstance($module, $recordId);
+        $record = $this->getRecordById($module, $recordId);
         return $record->uploadAttachment($filepath);
     }
 
@@ -499,7 +499,7 @@ class ZohoClient
      */
     public function downloadFile(string $module, string $recordId, string $attachmentId)
     {
-        $record = \ZCRMRecord::getInstance($module, $recordId);
+        $record = $this->getRecordById($module, $recordId);
         return $record->downloadAttachment($attachmentId);
     }
 

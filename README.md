@@ -21,11 +21,11 @@ use the third parameter of the `Client` constructor:
 
 ```php
 $zohoClient = new ZohoClient([
-    'client_id' => '',
-     'client_secret' => '',
-    'redirect_uri' => '',
-    'currentUserEmail' => '',
-    'applicationLogFilePath' => '',
+    'client_id' => 'xxxxxxxxxxxxxxxxxxxxxx',
+     'client_secret' => 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+    'redirect_uri' => 'http://xxxxxxxxx.com/bakcxxxx',
+    'currentUserEmail' => 'xxxxx@test.fr',
+    'applicationLogFilePath' => '/xxx/xxx/',
     'sandbox' => true or false,
     'apiBaseUrl' => '',
     'apiVersion' => '',
@@ -33,7 +33,7 @@ $zohoClient = new ZohoClient([
     'accounts_url' => '',
     'persistence_handler_class' => '',
     'token_persistence_path' => ''
-]);
+], 'Europe/Paris);
 ```  
 
 Zoho CRM Commands
@@ -62,8 +62,7 @@ Read how to change the client configuration - read [Configuration](https://githu
 - change the stored environment variable `persistence_handler_class`
 - change the stored environment variable `token_persistence_path`
 - change the stored environment variable `userid_test`
-
-TODO:
-- Unit Test
-    - uploadFile	
-    - downloadFile
+- change the stored environment variable `timeZone`
+- change the stored environment variable `deal_status`
+- change the stored environment variable `campaign_type`
+- change the stored environment variable `filepath_upload`
