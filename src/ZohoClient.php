@@ -549,4 +549,8 @@ class ZohoClient
         return $bulkAPIResponse->getData();
     }
 
+    public function logException(\ZCRMException $exception){
+        \APIExceptionHandler::logException($exception);
+    }
+
 }
