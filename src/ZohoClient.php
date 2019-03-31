@@ -2,6 +2,7 @@
 
 namespace Wabel\Zoho\CRM;
 use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 use Wabel\Zoho\CRM\Exceptions\ExceptionZohoClient;
 
 /**
@@ -41,13 +42,13 @@ class ZohoClient
      *             'persistence_handler_class' => '',
      *             'token_persistence_path' => '']
      * @param string $timezone
-     * @param LoggerInterface $logger
+     * @param LoggerInterface|null $logger
      */
-    public function __construct(array $configurations = null, string $timezone, LoggerInterface $logger)
+    public function __construct(array $configurations = null, string $timezone, ?LoggerInterface $logger = null)
     {
         $this->configurations = $configurations;
         $this->timezone = $timezone;
-        $this->logger = $logger;
+        $this->logger = $logger? $logger : new NullLogger();
     }
 
     /**
@@ -68,9 +69,17 @@ class ZohoClient
     }
 
 
+    /**
+     * @throws \ZohoOAuthException
+     */
     public function initCLient() :void
     {
-        \ZCRMRestClient::initialize($this->configurations);
+        try{
+            \ZCRMRestClient::initialize($this->configurations);
+        } catch (\ZohoOAuthException $exception){
+            $this->logClientException(__METHOD__, $exception,'error', 'Cannot initialize the  zoho Client Instance');
+            throw $exception;
+        }
     }
 
     /**
@@ -81,7 +90,7 @@ class ZohoClient
     {
         $this->initCLient();
         try{
-            return \ZohoOAuth::getClientInstance();
+            return \ZohoOAuth::getZoClientInstance();
         } catch (\ZohoOAuthException $ex){
             $this->logClientException(__METHOD__, $ex,'error', 'Cannot get the zoho Client Instance');
             throw $ex;
@@ -111,6 +120,9 @@ class ZohoClient
             $this->logClientException(__METHOD__, $ex,'error', 'Cannot generate access token {grantToken}', ['grantToken' => $grantToken]);
             throw $ex;
         }
+        catch (\ZohoOAuthException $exceptionAuth){
+            $this->logAuthException(__METHOD__, $exceptionAuth);
+        }
     }
 
     /**
@@ -130,6 +142,9 @@ class ZohoClient
                 'userIdentifier' => $userIdentifier
             ]);
             throw $ex;
+        }
+        catch (\ZohoOAuthException $exceptionAuth){
+            $this->logAuthException(__METHOD__, $exceptionAuth);
         }
     }
 
@@ -159,10 +174,13 @@ class ZohoClient
         } catch (\ZCRMException $ex){
             $this->logClientException(__METHOD__, $ex,'error', 'Cannot covert the lead {leadId} for dealId {dealId} with the userId {userId}', [
                 'leadId' => $leadId,
-                'userId' => $userId? : '',
-                'dealId' => $dealId? : ''
+                'userId' => $userId? : 'null',
+                'dealId' => $dealId? : 'null'
             ]);
             throw $ex;
+        }
+        catch (\ZohoOAuthException $exceptionAuth){
+            $this->logAuthException(__METHOD__, $exceptionAuth);
         }
     }
 
@@ -190,14 +208,18 @@ class ZohoClient
             ]);
             throw $exception;
         }
+        catch (\ZohoOAuthException $exceptionAuth){
+            $this->logAuthException(__METHOD__, $exceptionAuth);
+        }
     }
 
     /**
      * Implements deleteRecords API method.
      *
-     * @param  string       $module
-     * @param  string|array $ids    Id of the record
+     * @param  string $module
+     * @param  string|array $ids Id of the record
      * @return \EntityResponse[]
+     * @throws \ZCRMException
      */
     public function deleteRecords($module, $ids)
     {
@@ -218,14 +240,18 @@ class ZohoClient
             ]);
             throw  $ex;
         }
+        catch (\ZohoOAuthException $exceptionAuth){
+            $this->logAuthException(__METHOD__, $exceptionAuth);
+        }
     }
 
     /**
      * Implements getRecordById API method.
      *
      * @param  string $module The module to use
-     * @param  string $id     Id of the record or a list of IDs separated by a semicolon
+     * @param  string $id Id of the record or a list of IDs separated by a semicolon
      * @return \ZCRMRecord
+     * @throws \ZCRMException
      */
     public function getRecordById($module, $id)
     {
@@ -242,18 +268,23 @@ class ZohoClient
             ]);
             throw $ex;
         }
+        catch (\ZohoOAuthException $exceptionAuth){
+            $this->logAuthException(__METHOD__, $exceptionAuth);
+        }
     }
+
     /**
      * Implements getRecords API method.
      *
-     * @param  string      $module
+     * @param  string $module
      * @param  string|null $cvId
      * @param  string|null $sortColumnString
      * @param  string|null $sortOrderString
-     * @param  int         $fromIndex
-     * @param  int         $toIndex
-     * @param  null        $header
+     * @param  int $fromIndex
+     * @param  int $toIndex
+     * @param  null $header
      * @return \ZCRMRecord[]
+     * @throws \ZCRMException
      */
     public function getRecords($module, $cvId = null, $sortColumnString = null, $sortOrderString = null, $fromIndex = 1, $toIndex = 200, $header = null)
     {
@@ -270,6 +301,9 @@ class ZohoClient
                 'moduleName' => $module,
             ]);
             throw $ex;
+        }
+        catch (\ZohoOAuthException $exceptionAuth){
+            $this->logAuthException(__METHOD__, $exceptionAuth);
         }
     }
 
@@ -338,6 +372,9 @@ class ZohoClient
             ]);
             throw $exception;
         }
+        catch (\ZohoOAuthException $exceptionAuth){
+            $this->logAuthException(__METHOD__, $exceptionAuth);
+        }
     }
 
     /**
@@ -392,12 +429,13 @@ class ZohoClient
      *
      * @param  $module
      * @param  $id
-     * @param  string      $relatedListAPIName
+     * @param  string $relatedListAPIName
      * @param  string|null $sortByField
      * @param  string|null $sortByOrder
-     * @param  int         $page
-     * @param  int         $perPage
+     * @param  int $page
+     * @param  int $perPage
      * @return \BulkAPIResponse
+     * @throws \ZCRMException
      */
     public function getRelatedRecords($module, $id, $relatedListAPIName, $sortByField = null, $sortByOrder = null, $page = 1, $perPage = 200)
     {
@@ -417,6 +455,9 @@ class ZohoClient
             ]);
             throw $exception;
         }
+        catch (\ZohoOAuthException $exceptionAuth){
+            $this->logAuthException(__METHOD__, $exceptionAuth);
+        }
 
         return $bulkAPIResponse;
     }
@@ -426,59 +467,95 @@ class ZohoClient
      * For unit tests or search after creation of entities you have to wait indexing from zoho.
      *
      * @param  $module
-     * @param  mixed  $searchCondition
-     * @param  string $type            Type of search(among phone, email, criteria, word).By default  search by word
-     * @param  int    $page
-     * @param  int    $perPage
+     * @param  mixed $searchCondition
+     * @param string $type Type of search(among phone, email, criteria, word).By default  search by word
+     * @param  int $page
+     * @param  int $perPage
      * @return \ZCRMRecord[]
+     * @throws \ZCRMException
      */
     public function searchRecords($module, $searchCondition, string $type = 'word', $page = 1, $perPage = 200)
     {
         $zcrmModuleIns = $this->getModule($module);
-        if($type === 'word') {
-            $bulkAPIResponse = $zcrmModuleIns->searchRecords($searchCondition, $page, $perPage);
-        } else{
-            $typeSearchMethod = "searchRecordsBy".ucfirst($type);
-            $bulkAPIResponse = $zcrmModuleIns->{"$typeSearchMethod"}($searchCondition, $page, $perPage);
+        try{
+            if($type === 'word') {
+                $bulkAPIResponse = $zcrmModuleIns->searchRecords($searchCondition, $page, $perPage);
+            } else{
+                $typeSearchMethod = "searchRecordsBy".ucfirst($type);
+                $bulkAPIResponse = $zcrmModuleIns->{"$typeSearchMethod"}($searchCondition, $page, $perPage);
+            }
+            return $bulkAPIResponse->getData();
+        }catch (\ZCRMException $ex){
+            $this->logClientException(__METHOD__, $ex,'error', 'Cannot search records from {moduleName} with searchCondition "{searchCondition}" and type "{type}"', [
+                'moduleName' => $module,
+                'searchCondition' => $searchCondition,
+                'type' => $type
+            ]);
+            throw $ex;
         }
-        return $bulkAPIResponse->getData();
+        catch (\ZohoOAuthException $exceptionAuth){
+            $this->logAuthException(__METHOD__, $exceptionAuth);
+        }
     }
 
     /**
      * Implements getUser API method.
      *
+     * @param $userId
      * @param  string|null $orgName
      * @param  string|null $orgId
      * @return \ZCRMUser
+     * @throws \ZCRMException
      */
     public function getUser($userId ,$orgName = null, $orgId = null)
     {
         $this->initCLient();
-        /**
-         * @var $APIResponse \APIResponse
-         */
-        $APIResponse = \ZCRMOrganization::getInstance($orgName, $orgId)->getUser($userId);
-        return $APIResponse->getData();
+        try{
+            /**
+             * @var $APIResponse \APIResponse
+             */
+            $APIResponse = \ZCRMOrganization::getInstance($orgName, $orgId)->getUser($userId);
+            return $APIResponse->getData();
+        } catch(\ZCRMException $ex){
+            $this->logClientException(__METHOD__, $ex,'error', 'Cannot get user with id {id} , organisation Name "{orgName}" and organisation ID {orgId}', [
+                'id' => $userId,
+                'orgName' => $orgName,
+                'orgId' => $orgId
+            ]);
+            throw $ex;
+        }
+        catch (\ZohoOAuthException $exceptionAuth){
+            $this->logAuthException(__METHOD__, $exceptionAuth);
+        }
     }
 
 
     /**
      * Implements getUsers API method.
      *
-     * @param  string      $type    The type of users you want retrieve (among AllUsers, ActiveUsers, DesactiveUsers, AdminUsers and ActiveConfirmedAdmins)
+     * @param  string $type The type of users you want retrieve (among AllUsers, ActiveUsers, DesactiveUsers, AdminUsers and ActiveConfirmedAdmins)
      * @param  string|null $orgName
      * @param  string|null $orgId
      * @return \ZCRMUser[]
+     * @throws \ZCRMException
      */
     public function getUsers($type = 'AllUsers',$orgName = null, $orgId = null)
     {
         $typeMethod = "get" . $type;
         $this->initCLient();
-        /**
-         * @var $bulkAPIResponse \BulkAPIResponse
-         */
-        $bulkAPIResponse = \ZCRMOrganization::getInstance($orgName, $orgId)->{"$typeMethod"}();
-        return $bulkAPIResponse->getData();
+        try{
+            /**
+             * @var $bulkAPIResponse \BulkAPIResponse
+             */
+            $bulkAPIResponse = \ZCRMOrganization::getInstance($orgName, $orgId)->{"$typeMethod"}();
+            return $bulkAPIResponse->getData();
+        }catch(\ZCRMException $exception){
+            $this->logClientException(__METHOD__, $exception,'error', 'Cannot get {type} users',['type' => $type]);
+            throw $exception;
+        }
+        catch (\ZohoOAuthException $exceptionAuth){
+            $this->logAuthException(__METHOD__, $exceptionAuth);
+        }
     }
 
     /**
@@ -490,12 +567,27 @@ class ZohoClient
      */
     public function upsertRecords($module, array $records)
     {
-        $zcrmModuleIns = $this->getModule($module);
-        /**
-         * @var $bulkAPIResponse \BulkAPIResponse
-         */
-        $bulkAPIResponse = $zcrmModuleIns->upsertRecords($records);
-        return $bulkAPIResponse->getEntityResponses();
+        try{
+            $zcrmModuleIns = $this->getModule($module);
+            /**
+             * @var $bulkAPIResponse \BulkAPIResponse
+             */
+            $bulkAPIResponse = $zcrmModuleIns->upsertRecords($records);
+            return $bulkAPIResponse->getEntityResponses();
+        } catch(\ZCRMException $exception){
+            $recordsJson = [];
+            foreach ($records as $record){
+                $recordsJson[]=\EntityAPIHandler::getInstance($record)->getZCRMRecordAsJSON();
+            }
+            $this->logClientException(__METHOD__, $exception,'error', 'Cannot upsert records for the module {moduleName}. Send Data: {json}', [
+                'moduleName' => $module,
+                'json' => json_encode($recordsJson)
+            ]);
+            throw $exception;
+        }
+        catch (\ZohoOAuthException $exceptionAuth){
+            $this->logAuthException(__METHOD__, $exceptionAuth);
+        }
     }
 
 
@@ -504,85 +596,158 @@ class ZohoClient
      *
      * @param  $module
      * @param  \ZCRMRecord[] $records
-     * @param  null|bool     $trigger
+     * @param bool|null $trigger
      * @return \EntityResponse[]
+     * @throws \ZCRMException
      */
     public function insertRecords($module, array $records,  ?bool $trigger = null)
     {
-        $zcrmModuleIns = $this->getModule($module);
-        /**
-         * @var $bulkAPIResponse \BulkAPIResponse
-         */
-        $bulkAPIResponse = $zcrmModuleIns->createRecords($records, $trigger);
-        return $bulkAPIResponse->getEntityResponses();
+        try{
+            $zcrmModuleIns = $this->getModule($module);
+            /**
+             * @var $bulkAPIResponse \BulkAPIResponse
+             */
+            $bulkAPIResponse = $zcrmModuleIns->createRecords($records, $trigger);
+            return $bulkAPIResponse->getEntityResponses();
+        } catch(\ZCRMException $exception){
+            $recordsJson = [];
+            foreach ($records as $record){
+                $recordsJson[]=\EntityAPIHandler::getInstance($record)->getZCRMRecordAsJSON();
+            }
+            $this->logClientException(__METHOD__, $exception,'error', 'Cannot insert records for the module {moduleName}. Send Data: {json}', [
+                'moduleName' => $module,
+                'json' => json_encode($recordsJson)
+            ]);
+            throw $exception;
+        }
+        catch (\ZohoOAuthException $exceptionAuth){
+            $this->logAuthException(__METHOD__, $exceptionAuth);
+        }
     }
 
     /**
      * Implements updateRecords API method.
      *
-     * @param  string        $module
+     * @param string $module
      * @param  \ZCRMRecord[] $records
-     * @param  null|bool     $trigger
+     * @param bool|null $trigger
      * @return \EntityResponse[]
+     * @throws \Exception
      */
     public function updateRecords(string $module, array $records,  ?bool $trigger = null)
     {
         $zcrmModuleIns = $this->getModule($module);
-        /**
-         * @var $bulkAPIResponse \BulkAPIResponse
-         */
-        $bulkAPIResponse = $zcrmModuleIns->updateRecords($records, $trigger);
-        return $bulkAPIResponse->getEntityResponses();
+
+        try{
+            /**
+             * @var $bulkAPIResponse \BulkAPIResponse
+             */
+            $bulkAPIResponse = $zcrmModuleIns->updateRecords($records, $trigger);
+            return $bulkAPIResponse->getEntityResponses();
+
+        } catch(\Exception $exception){
+            $recordsJson = [];
+            foreach ($records as $record){
+                $recordsJson[]=\EntityAPIHandler::getInstance($record)->getZCRMRecordAsJSON();
+            }
+            $this->logClientException(__METHOD__, $exception,'error', 'Cannot update records for the module {moduleName}. Send Data: {json}', [
+                'moduleName' => $module,
+                'json' => json_encode($recordsJson)
+            ]);
+            throw $exception;
+        }
+        catch (\ZohoOAuthException $exceptionAuth){
+            $this->logAuthException(__METHOD__, $exceptionAuth);
+        }
     }
 
     /**
      * Implements updateRelatedRecords API method.
      *
-     * @param  string $module
-     * @param  string $recordId
-     * @param  string $relatedModule
-     * @param  string $relatedRecordId
-     * @param  array  $fieldsValue
+     * @param string $module
+     * @param string $recordId
+     * @param string $relatedModule
+     * @param string $relatedRecordId
+     * @param  array $fieldsValue
      * @return \APIResponse
+     * @throws \ZCRMException
      */
     public function updateRelatedRecords(string $module, string $recordId,  string $relatedModule, string $relatedRecordId,  array $fieldsValue = [])
     {
-        $parentRecord= $this->getRecordById($module, $recordId);
-        $junctionRecord= \ZCRMJunctionRecord::getInstance($relatedModule, $relatedRecordId);
-        foreach ($fieldsValue as $fieldApiName => $value){
-            $junctionRecord->setRelatedData($fieldApiName, $value);
+        try{
+            $parentRecord= $this->getRecordById($module, $recordId);
+            $junctionRecord= \ZCRMJunctionRecord::getInstance($relatedModule, $relatedRecordId);
+            foreach ($fieldsValue as $fieldApiName => $value){
+                $junctionRecord->setRelatedData($fieldApiName, $value);
+            }
+            return $parentRecord->addRelation($junctionRecord);
+        } catch(\ZCRMException $exception){
+            $this->logClientException(__METHOD__, $exception,'error', 'Cannot update related records for the module {moduleName} for the record id  {id} for related module {relatedModule} and related reecord {relatedId}', [
+                'moduleName' => $module,
+                'id' => $recordId,
+                'relatedModule' => $relatedModule,
+                'relatedId' => $relatedRecordId
+            ]);
+            throw $exception;
         }
-        return $parentRecord->addRelation($junctionRecord);
+        catch (\ZohoOAuthException $exceptionAuth){
+            $this->logAuthException(__METHOD__, $exceptionAuth);
+        }
     }
 
     /**
      * Implements uploadFile API method.
      *
-     * @param  string $module
-     * @param  string $recordId
-     * @param  string $filepath
+     * @param string $module
+     * @param string $recordId
+     * @param string $filepath
      * @return \APIResponse
+     * @throws \ZCRMException
      */
     public function uploadFile(string $module, string $recordId, string $filepath)
     {
         $record = $this->getRecordById($module, $recordId);
-        return $record->uploadAttachment($filepath);
+        try{
+            return $record->uploadAttachment($filepath);
+        } catch(\ZCRMException $exception){
+            $this->logClientException(__METHOD__, $exception,'error', 'Cannot upload {filepath} for the module {moduleName} and  the record id  {id}', [
+                'moduleName' => $module,
+                'id' => $recordId,
+                'filepath' => $filepath
+            ]);
+            throw $exception;
+        }
+        catch (\ZohoOAuthException $exceptionAuth){
+            $this->logAuthException(__METHOD__, $exceptionAuth);
+        }
     }
-
 
 
     /**
      * Implements downloadFile API method.
      *
-     * @param  string $module
-     * @param  string $recordId
-     * @param  string $attachmentId
+     * @param string $module
+     * @param string $recordId
+     * @param string $attachmentId
      * @return \FileAPIResponse
+     * @throws \ZCRMException
      */
     public function downloadFile(string $module, string $recordId, string $attachmentId)
     {
         $record = $this->getRecordById($module, $recordId);
-        return $record->downloadAttachment($attachmentId);
+        try{
+            return $record->downloadAttachment($attachmentId);
+        } catch(\ZCRMException $exception){
+            $this->logClientException(__METHOD__, $exception,'error', 'Cannot download attchment #{fileID} for the module {moduleName} and  the record id  {id}', [
+                'moduleName' => $module,
+                'id' => $recordId,
+                'fileID' => $attachmentId
+            ]);
+            throw $exception;
+        }
+        catch (\ZohoOAuthException $exceptionAuth){
+            $this->logAuthException(__METHOD__, $exceptionAuth);
+        }
     }
 
 
@@ -603,15 +768,24 @@ class ZohoClient
      * Returns a list of modules from Zoho.
      *
      * @return \ZCRMModule[]
+     * @throws \ZCRMException
      */
     public function getModules(): array
     {
         $this->initCLient();
-        /**
-         * @var $bulkAPIResponse \BulkAPIResponse
-         */
-        $bulkAPIResponse =  \ZCRMRestClient::getInstance()->getAllModules();
-        return $bulkAPIResponse->getData();
+        try{
+            /**
+             * @var $bulkAPIResponse \BulkAPIResponse
+             */
+            $bulkAPIResponse =  \ZCRMRestClient::getInstance()->getAllModules();
+            return $bulkAPIResponse->getData();
+        } catch (\ZCRMException $exception){
+            $this->logClientException(__METHOD__, $exception,'error', 'Cannot get all modules');
+            throw $exception;
+        }
+        catch (\ZohoOAuthException $exceptionAuth){
+            $this->logAuthException(__METHOD__, $exceptionAuth);
+        }
     }
 
     public function logException(\ZCRMException $exception){
@@ -627,7 +801,12 @@ class ZohoClient
      */
     private function  logClientException(string $method, \Exception $exception,$type = 'error', string $message, array $contextParams = []){
 
-        $this->{$type}($message? $message.'. From '.self::class.':'.$method.'()' : $exception->getMessage(), array_merge([
+        $this->logger->{$type}($message? $message.'. From '.$method.'()' : $exception->getMessage(), array_merge([
             'exception' => $exception], $contextParams));
+    }
+
+    private function logAuthException(string $method, \Exception $exception){
+        $this->logger->error('Can process method {method} because of authentication problem', ['exception' => $exception]);
+        throw $exception;
     }
 }
