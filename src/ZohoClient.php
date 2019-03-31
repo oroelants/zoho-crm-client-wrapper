@@ -1,6 +1,7 @@
 <?php
 
 namespace Wabel\Zoho\CRM;
+use Psr\Log\LoggerInterface;
 use Wabel\Zoho\CRM\Exceptions\ExceptionZohoClient;
 
 /**
@@ -18,11 +19,15 @@ class ZohoClient
      * @var string
      */
     protected $timezone;
+    /**
+     * @var LoggerInterface
+     */
+    private $logger;
 
     /**
      * ZohoClient constructor.
      *
-     * @param array  $configurations
+     * @param array $configurations
      *             ['client_id' => '',
      *              'client_secret' => '',
      *             'redirect_uri' => '',
@@ -36,11 +41,13 @@ class ZohoClient
      *             'persistence_handler_class' => '',
      *             'token_persistence_path' => '']
      * @param string $timezone
+     * @param LoggerInterface $logger
      */
-    public function __construct(array $configurations = null, string $timezone)
+    public function __construct(array $configurations = null, string $timezone, LoggerInterface $logger)
     {
         $this->configurations = $configurations;
         $this->timezone = $timezone;
+        $this->logger = $logger;
     }
 
     /**
@@ -73,7 +80,12 @@ class ZohoClient
     public function getZohoOAuthClient()
     {
         $this->initCLient();
-        return \ZohoOAuth::getClientInstance();
+        try{
+            return \ZohoOAuth::getClientInstance();
+        } catch (\ZohoOAuthException $ex){
+            $this->logClientException(__METHOD__, $ex,'error', 'Cannot get the zoho Client Instance');
+            throw $ex;
+        }
     }
 
     /**
@@ -93,27 +105,42 @@ class ZohoClient
     public function generateAccessToken(string $grantToken)
     {
         $client = $this->getZohoOAuthClient();
-        return $client->generateAccessToken($grantToken);
+        try{
+            return $client->generateAccessToken($grantToken);
+        } catch (\ZohoOAuthException $ex){
+            $this->logClientException(__METHOD__, $ex,'error', 'Cannot generate access token {grantToken}', ['grantToken' => $grantToken]);
+            throw $ex;
+        }
     }
 
     /**
-     * @param  string $refreshToken
-     * @param  string $userIdentifier
+     * @param string $refreshToken
+     * @param string $userIdentifier
      * @return mixed
+     * @throws \ZohoOAuthException
      */
     public function generateAccessTokenFromRefreshToken(string $refreshToken, string $userIdentifier)
     {
         $oAuthClient = $this->getZohoOAuthClient();
-        return $oAuthClient->generateAccessTokenFromRefreshToken($refreshToken, $userIdentifier);
+        try{
+            return $oAuthClient->generateAccessTokenFromRefreshToken($refreshToken, $userIdentifier);
+        } catch (\ZohoOAuthException $ex){
+            $this->logClientException(__METHOD__, $ex,'error', 'Cannot refresh token {grantToken} with user identifier : {userIdentifier} ', [
+                'refreshToken' => $refreshToken,
+                'userIdentifier' => $userIdentifier
+            ]);
+            throw $ex;
+        }
     }
 
     /**
      * Implements convertLead API method.
      *
-     * @param  string      $leadId
+     * @param  string $leadId
      * @param  string|null $dealId
      * @param  string|null $userId
-     * @return array
+     * @return \APIResponse
+     * @throws \ZCRMException
      */
     public function convertLead($leadId, $dealId = null, $userId = null)
     {
@@ -127,7 +154,16 @@ class ZohoClient
         if($userId) {
             $userInstance = $this->getUser($userId);
         }
-        return $record->convert($recordDeal, $userInstance);
+        try{
+            return $record->convert($recordDeal, $userInstance);
+        } catch (\ZCRMException $ex){
+            $this->logClientException(__METHOD__, $ex,'error', 'Cannot covert the lead {leadId} for dealId {dealId} with the userId {userId}', [
+                'leadId' => $leadId,
+                'userId' => $userId? : '',
+                'dealId' => $dealId? : ''
+            ]);
+            throw $ex;
+        }
     }
 
     /**
@@ -149,6 +185,9 @@ class ZohoClient
             if(ExceptionZohoClient::exceptionCodeFormat($exception->getExceptionCode()) === ExceptionZohoClient::EXCEPTION_CODE_NO__CONTENT) {
                 return null;
             }
+            $this->logClientException(__METHOD__, $exception,'error', 'Cannot get all fields for the module {moduleName}', [
+                'moduleName' => $module
+            ]);
             throw $exception;
         }
     }
@@ -166,12 +205,19 @@ class ZohoClient
         if(is_string($ids)) {
             $ids = [$ids];
         }
-        /**
-         * @var $bulkAPIResponse \BulkAPIResponse
-         */
-        $bulkAPIResponse = $zcrmModuleIns->deleteRecords($ids);
-
-        return $bulkAPIResponse->getEntityResponses();
+        try{
+            /**
+             * @var $bulkAPIResponse \BulkAPIResponse
+             */
+            $bulkAPIResponse = $zcrmModuleIns->deleteRecords($ids);
+            return $bulkAPIResponse->getEntityResponses();
+        } catch(\ZCRMException $ex){
+            $this->logClientException(__METHOD__, $ex,'error', 'Cannot delete the record(s) {id} for the module {moduleName}', [
+                'moduleName' => $module,
+                'id' => implode(',', $ids)
+            ]);
+            throw  $ex;
+        }
     }
 
     /**
@@ -183,11 +229,19 @@ class ZohoClient
      */
     public function getRecordById($module, $id)
     {
-        /**
-         * @var $response \APIResponse
-         */
-        $response = $this->getModule($module)->getRecord($id);
-        return $response->getData();
+        try{
+            /**
+             * @var $response \APIResponse
+             */
+            $response = $this->getModule($module)->getRecord($id);
+            return $response->getData();
+        }catch(\ZCRMException $ex){
+            $this->logClientException(__METHOD__, $ex,'error', 'Cannot get record {id} for the module {moduleName}. Maybe it does not exist or something wrong', [
+                'moduleName' => $module,
+                'id' => implode(',', $id)
+            ]);
+            throw $ex;
+        }
     }
     /**
      * Implements getRecords API method.
@@ -205,11 +259,18 @@ class ZohoClient
     {
 
         $zcrmModuleIns = $this->getModule($module);
-        /**
-         * @var $bulkAPIResponse \BulkAPIResponse
-         */
-        $bulkAPIResponse = $zcrmModuleIns->getRecords($cvId, $sortColumnString, $sortOrderString, $fromIndex, $toIndex, $header);
-        return $bulkAPIResponse->getData();
+        try{
+            /**
+             * @var $bulkAPIResponse \BulkAPIResponse
+             */
+            $bulkAPIResponse = $zcrmModuleIns->getRecords($cvId, $sortColumnString, $sortOrderString, $fromIndex, $toIndex, $header);
+            return $bulkAPIResponse->getData();
+        } catch (\ZCRMException $ex){
+            $this->logClientException(__METHOD__, $ex,'error', 'Cannot get records for the module {moduleName}', [
+                'moduleName' => $module,
+            ]);
+            throw $ex;
+        }
     }
 
     /**
@@ -270,11 +331,12 @@ class ZohoClient
         {
             if(ExceptionZohoClient::exceptionCodeFormat($exception->getExceptionCode()) === ExceptionZohoClient::EXCEPTION_CODE_NO__CONTENT) {
                 return null;
-            } else{
-                \APIExceptionHandler::logException($exception);
-                throw $exception;
             }
-
+            $this->logClientException(__METHOD__, $exception,'error', 'Cannot get deleted records with type "{type}" for the module {moduleName}', [
+                'moduleName' => $module,
+                'type' => $typeOfRecord
+            ]);
+            throw $exception;
         }
     }
 
@@ -349,7 +411,10 @@ class ZohoClient
             if(ExceptionZohoClient::exceptionCodeFormat($exception->getExceptionCode()) === ExceptionZohoClient::EXCEPTION_CODE_NO__CONTENT) {
                 return null;
             }
-            var_dump($exception->getExceptionCode());
+            $this->logClientException(__METHOD__, $exception,'error', 'Cannot get related records from the record id {id} for the module {moduleName}', [
+                'moduleName' => $module,
+                'id' => $id
+            ]);
             throw $exception;
         }
 
@@ -553,4 +618,16 @@ class ZohoClient
         \APIExceptionHandler::logException($exception);
     }
 
+    /**
+     * @param string $method
+     * @param \Exception $exception
+     * @param string $type
+     * @param string $message
+     * @param array $contextParams
+     */
+    private function  logClientException(string $method, \Exception $exception,$type = 'error', string $message, array $contextParams = []){
+
+        $this->{$type}($message? $message.'. From '.self::class.':'.$method.'()' : $exception->getMessage(), array_merge([
+            'exception' => $exception], $contextParams));
+    }
 }
