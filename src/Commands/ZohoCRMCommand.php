@@ -76,7 +76,7 @@ EOT
     }
 
     /**
-     * @throws \ZohoOAuthException
+     * @throws ZohoOAuthException
      */
     public function refreshAccessToken()
     {
@@ -84,7 +84,7 @@ EOT
         $currentUserEmail = $this->zohoClient->getConfigurations()['currentUserEmail'];
         $token = $this->zohoClient->getZohoOAuthClient()->getAccessToken($currentUserEmail);
         if ($token) {
-            $persistence = \ZohoOAuth::getPersistenceHandlerInstance();
+            $persistence = ZohoOAuth::getPersistenceHandlerInstance();
             $token = $persistence->getOAuthTokens(ZOHO_CRM_CLIENT_CURRENT_USER_EMAIL);
             $this->logger->debug('{information}', ['information' => print_r($token, true)]);
             $this->logger->info('End - Refresh Access token');

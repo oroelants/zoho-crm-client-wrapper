@@ -3,6 +3,10 @@
 namespace Wabel\Zoho\CRM;
 
 use PHPUnit\Framework\TestCase;
+use zcrmsdk\crm\crud\ZCRMRecord;
+use zcrmsdk\crm\crud\ZCRMTrashRecord;
+use zcrmsdk\crm\crud\ZCRMAttachment;
+use zcrmsdk\crm\utility\APIConstants;
 
 class ZohoClientTest extends TestCase
 {
@@ -31,45 +35,45 @@ class ZohoClientTest extends TestCase
     {
         $allModules = $this->zohoClient->getModules();
         $this->assertNotEmpty($allModules);
-        $this->assertContainsOnlyInstancesOf('\ZCRMModule', $allModules);
+        $this->assertContainsOnlyInstancesOf('zcrmsdk\crm\crud\ZCRMModule', $allModules);
     }
 
     public function testGetModule()
     {
         $module = $this->zohoClient->getModule('Accounts');
-        $this->assertInstanceOf('\ZCRMModule', $module);
+        $this->assertInstanceOf('zcrmsdk\crm\crud\ZCRMModule', $module);
     }
 
     public function testGetFields()
     {
         $allFields = $this->zohoClient->getFields('Accounts');
         $this->assertNotEmpty($allFields);
-        $this->assertContainsOnlyInstancesOf('\ZCRMField', $allFields);
+        $this->assertContainsOnlyInstancesOf('zcrmsdk\crm\crud\ZCRMField', $allFields);
     }
 
     public function testGetAllUsers()
     {
         $users = $this->zohoClient->getUsers();
         $this->assertNotEmpty($users);
-        $this->assertContainsOnlyInstancesOf('\ZCRMUser', $users);
+        $this->assertContainsOnlyInstancesOf('zcrmsdk\crm\setup\users\ZCRMUser', $users);
     }
 
     public function testGetUser()
     {
         $user = $this->zohoClient->getUser(getenv('userid_test'));
-        $this->assertInstanceOf('\ZCRMUser', $user);
+        $this->assertInstanceOf('zcrmsdk\crm\setup\users\ZCRMUser', $user);
         $this->assertEquals(getenv('userid_test'), $user->getId());
     }
 
 
     /**
-     * @return \ZCRMRecord[]
+     * @return ZCRMRecord[]
      */
     public function testInsertRecords()
     {
-        $lead1 = \ZCRMRecord::getInstance('Leads', null);
-        $lead2 = \ZCRMRecord::getInstance('Leads', null);
-        $lead3 = \ZCRMRecord::getInstance('Leads', null);
+        $lead1 = ZCRMRecord::getInstance('Leads', null);
+        $lead2 = ZCRMRecord::getInstance('Leads', null);
+        $lead3 = ZCRMRecord::getInstance('Leads', null);
         $lead1->setFieldValue('Last_Name', 'Lead 1');
         $lead2->setFieldValue('Last_Name', 'Lead 2');
         $lead3->setFieldValue('Last_Name', 'Lead 3');
@@ -86,7 +90,7 @@ class ZohoClientTest extends TestCase
 
     /**
      * @depends testInsertRecords
-     * @param   \ZCRMRecord[] $leads
+     * @param   ZCRMRecord[] $leads
      */
     public function testUpdateRecords(array $leads)
     {
@@ -95,15 +99,15 @@ class ZohoClientTest extends TestCase
         $leads[2]->setFieldValue('Last_Name', 'Lead 3-1');
         $entityResponses = $this->zohoClient->updateRecords('Leads', $leads);
         $firstEntity = array_shift($entityResponses);
-        $this->assertInstanceOf('\ZCRMRecord', $firstEntity->getData());
+        $this->assertInstanceOf('zcrmsdk\crm\crud\ZCRMRecord', $firstEntity->getData());
         $this->assertEquals($leads[0]->getFieldValue('Last_Name'), $firstEntity->getData()->getFieldValue('Last_Name'));
         return $leads;
     }
 
     /**
      * @depends testUpdateRecords
-     * @param   \ZCRMRecord[] $leads
-     * @return  \ZCRMRecord[]
+     * @param   ZCRMRecord[] $leads
+     * @return  ZCRMRecord[]
      */
     public function testGetRecords(array $leads)
     {
@@ -112,10 +116,10 @@ class ZohoClientTest extends TestCase
             ['If-Modified-Since' => (new \DateTime())->sub(new \DateInterval('PT2M'))->format(\DateTime::ATOM)]
         );
         $firstEntity = array_shift($records);
-        $this->assertContainsOnlyInstancesOf('\ZCRMRecord', $records);
+        $this->assertContainsOnlyInstancesOf('zcrmsdk\crm\crud\ZCRMRecord', $records);
         $this->assertContains(
             $firstEntity->getEntityId(), array_map(
-                function (\ZCRMRecord $leadEntity) {
+                function (ZCRMRecord $leadEntity) {
                     return $leadEntity->getEntityId();
                 }, $leads
             )
@@ -125,57 +129,57 @@ class ZohoClientTest extends TestCase
 
     /**
      * @depends testGetRecords
-     * @param   \ZCRMRecord[] $leads
+     * @param   ZCRMRecord[] $leads
      */
     public function testDeleteRecords(array $leads)
     {
         $zohoEntitiesReponse = $this->zohoClient->deleteRecords('Leads', [$leads[0]->getEntityId(),$leads[1]->getEntityId()]);
         $this->assertNotEmpty($zohoEntitiesReponse);
         $firstEntity = array_shift($zohoEntitiesReponse);
-        $this->assertInstanceOf('\ZCRMRecord', $firstEntity->getData());
+        $this->assertInstanceOf('zcrmsdk\crm\crud\ZCRMRecord', $firstEntity->getData());
         $this->assertEquals('success', $firstEntity->getStatus());
         return $leads[2];
     }
 
     /**
      * @depends testDeleteRecords
-     * @param   \ZCRMRecord $lead
+     * @param   ZCRMRecord $lead
      */
-    public function testGetRecordById(\ZCRMRecord $lead)
+    public function testGetRecordById(ZCRMRecord $lead)
     {
         $record = $this->zohoClient->getRecordById('Leads', $lead->getEntityId());
-        $this->assertInstanceOf('\ZCRMRecord', $record);
+        $this->assertInstanceOf('zcrmsdk\crm\crud\ZCRMRecord', $record);
         $this->assertEquals($lead->getEntityId(), $record->getEntityId());
         return $lead;
     }
 
     /**
      * @depends testGetRecordById
-     * @param   \ZCRMRecord $lead
-     * @return  \ZCRMRecord
+     * @param   ZCRMRecord $lead
+     * @return  ZCRMRecord
      */
-    public function testDeleteRecord(\ZCRMRecord $lead)
+    public function testDeleteRecord(ZCRMRecord $lead)
     {
         $zohoEntitiesReponse = $this->zohoClient->deleteRecords('Leads', $lead->getEntityId());
         $this->assertNotEmpty($zohoEntitiesReponse);
         $firstEntity = array_shift($zohoEntitiesReponse);
-        $this->assertInstanceOf('\ZCRMRecord', $firstEntity->getData());
+        $this->assertInstanceOf('zcrmsdk\crm\crud\ZCRMRecord', $firstEntity->getData());
         $this->assertEquals($lead->getEntityId(), $firstEntity->getDetails()['id']);
         return $lead;
     }
 
     /**
      * @depends testGetRecordById
-     * @param   \ZCRMRecord $lead
+     * @param   ZCRMRecord $lead
      */
-    public function testGetDeletedRecords(\ZCRMRecord $lead)
+    public function testGetDeletedRecords(ZCRMRecord $lead)
     {
         $trashEntities = $this->zohoClient->getDeletedRecords('Leads');
         $this->assertNotEmpty($trashEntities);
-        $this->assertContainsOnlyInstancesOf('\ZCRMTrashRecord', $trashEntities->getData());
+        $this->assertContainsOnlyInstancesOf('zcrmsdk\crm\crud\ZCRMTrashRecord', $trashEntities->getData());
         $this->assertContains(
             $lead->getFieldValue('Last_Name'), array_map(
-                function (\ZCRMTrashRecord $trashRecord) {
+                function (ZCRMTrashRecord $trashRecord) {
                     return $trashRecord->getDisplayName();
                 }, $trashEntities->getData()
             )
@@ -187,9 +191,9 @@ class ZohoClientTest extends TestCase
      */
     public function testUpsertRecordsAndSearch()
     {
-        $lead4 = \ZCRMRecord::getInstance('Leads', null);
-        $lead5 = \ZCRMRecord::getInstance('Leads', null);
-        $lead6 = \ZCRMRecord::getInstance('Leads', null);
+        $lead4 = ZCRMRecord::getInstance('Leads', null);
+        $lead5 = ZCRMRecord::getInstance('Leads', null);
+        $lead6 = ZCRMRecord::getInstance('Leads', null);
         $lead4->setFieldValue('Last_Name', 'NewLead 4');
         $lead5->setFieldValue('Last_Name', 'NewLead 5');
         $lead6->setFieldValue('Last_Name', 'NewLead 6');
@@ -214,34 +218,34 @@ class ZohoClientTest extends TestCase
 
     public function testConvertLeadNoDeal()
     {
-        $lead = \ZCRMRecord::getInstance('Leads', null);
+        $lead = ZCRMRecord::getInstance('Leads', null);
         $lead->setFieldValue('Last_Name', 'Lead To Convert');
         $lead->setFieldValue('Company', 'Company To Convert');
         $this->zohoClient->insertRecords('Leads', [$lead]);
         $this->assertNotNull($lead->getEntityId());
         $conversionResult = $this->zohoClient->convertLead($lead->getEntityId(), null, getenv('userid_test'));
-        $this->assertArrayHasKey(\APIConstants::ACCOUNTS, $conversionResult);
-        $this->assertArrayHasKey(\APIConstants::CONTACTS, $conversionResult);
+        $this->assertArrayHasKey(APIConstants::ACCOUNTS, $conversionResult);
+        $this->assertArrayHasKey(APIConstants::CONTACTS, $conversionResult);
     }
 
     public function testConvertLeadWithDeal()
     {
-        $lead2 = \ZCRMRecord::getInstance('Leads', null);
+        $lead2 = ZCRMRecord::getInstance('Leads', null);
         $lead2->setFieldValue('Last_Name', 'Contact LastLead To Convert 2');
         $lead2->setFieldValue('First_Name', 'Contact FirstLead To Convert 2');
         $lead2->setFieldValue('Company', 'Account Lead To Convert 2');
         $this->zohoClient->insertRecords('Leads', [$lead2]);
         $this->assertNotNull($lead2->getEntityId());
-        $account = \ZCRMRecord::getInstance('Accounts', null);
+        $account = ZCRMRecord::getInstance('Accounts', null);
         $account->setFieldValue('Account_Name', 'Account Lead To Convert 2');
         $this->zohoClient->insertRecords('Accounts', [$account]);
         $this->assertNotNull($account->getEntityId());
-        $campaign = \ZCRMRecord::getInstance('Campaigns', null);
+        $campaign = ZCRMRecord::getInstance('Campaigns', null);
         $campaign->setFieldValue('Campaign_Name', 'Campaign Test Lead Convert');
         $campaign->setFieldValue('Type', getenv('campaign_type'));
         $this->zohoClient->insertRecords('Campaigns', [$campaign]);
         $this->assertNotNull($campaign->getEntityId());
-        $deal = \ZCRMRecord::getInstance('Deals', null);
+        $deal = ZCRMRecord::getInstance('Deals', null);
         $deal->setFieldValue('Deal_Name', 'Deal Lead To Convert 2');
         $deal->setFieldValue('Closing_Date', (new \DateTime())->sub(new \DateInterval('P1D'))->format('Y-m-d'));
         $deal->setFieldValue('Stage', getenv('deal_status'));
@@ -251,24 +255,24 @@ class ZohoClientTest extends TestCase
         $this->zohoClient->insertRecords('Deals', [$deal]);
         $this->assertNotNull($deal->getEntityId());
         $conversionResult2 = $this->zohoClient->convertLead($lead2->getEntityId(), $deal->getEntityId(), getenv('userid_test'));
-        $this->assertArrayHasKey(\APIConstants::ACCOUNTS, $conversionResult2);
-        $this->assertArrayHasKey(\APIConstants::CONTACTS, $conversionResult2);
-        $this->assertArrayHasKey(\APIConstants::DEALS, $conversionResult2);
-        $this->assertNotNull($conversionResult2[\APIConstants::ACCOUNTS]);
-        $this->assertNotNull($conversionResult2[\APIConstants::CONTACTS]);
-        $this->assertNotNull($conversionResult2[\APIConstants::DEALS]);
+        $this->assertArrayHasKey(APIConstants::ACCOUNTS, $conversionResult2);
+        $this->assertArrayHasKey(APIConstants::CONTACTS, $conversionResult2);
+        $this->assertArrayHasKey(APIConstants::DEALS, $conversionResult2);
+        $this->assertNotNull($conversionResult2[APIConstants::ACCOUNTS]);
+        $this->assertNotNull($conversionResult2[APIConstants::CONTACTS]);
+        $this->assertNotNull($conversionResult2[APIConstants::DEALS]);
     }
 
     public function testUpdateRelatedRecords()
     {
-        $account = \ZCRMRecord::getInstance('Accounts', null);
+        $account = ZCRMRecord::getInstance('Accounts', null);
         $account->setFieldValue('Account_Name', 'New Account Related List');
         $this->zohoClient->insertRecords('Accounts', [$account]);
         $this->assertNotNull($account->getEntityId());
-        $product1 = \ZCRMRecord::getInstance('Products', null);
+        $product1 = ZCRMRecord::getInstance('Products', null);
         $product1->setFieldValue('Product_Name', 'New Product1 Doe');
         $product1->setFieldValue('Unit_Price', rand(20, 42));
-        $product2 = \ZCRMRecord::getInstance('Products', null);
+        $product2 = ZCRMRecord::getInstance('Products', null);
         $product2->setFieldValue('Product_Name', 'New Product2 Doe');
         $this->zohoClient->insertRecords('Products', [$product1, $product2]);
         $this->assertNotNull($product1->getEntityId());
@@ -285,22 +289,22 @@ class ZohoClientTest extends TestCase
     //
     public function testUploadFile()
     {
-        $account = \ZCRMRecord::getInstance('Accounts', null);
+        $account = ZCRMRecord::getInstance('Accounts', null);
         $account->setFieldValue('Account_Name', 'Account To Upload File');
         $this->zohoClient->insertRecords('Accounts', [$account]);
         $this->assertNotNull($account->getEntityId());
         $response = $this->zohoClient->uploadFile('Accounts', $account->getEntityId(), getenv('filepath_upload'));
         $this->assertNotNull($response->getDetails());
         $this->assertArrayHasKey('id', $response->getDetails());
-        $this->assertInstanceOf('\ZCRMAttachment', $response->getData());
+        $this->assertInstanceOf('zcrmsdk\crm\crud\ZCRMAttachment', $response->getData());
         return $response->getData();
     }
 
     /**
      * @depends testUploadFile
-     * @param   \ZCRMAttachment fileUploaded
+     * @param   ZCRMAttachment fileUploaded
      */
-    public function testDownloadFile(\ZCRMAttachment $fileUploaded)
+    public function testDownloadFile(ZCRMAttachment $fileUploaded)
     {
         $fileApiResponse = $this->zohoClient->downloadFile('Accounts', $fileUploaded->getParentRecord()->getEntityId(), $fileUploaded->getId());
         $filename= pathinfo(getenv('filepath_upload'), PATHINFO_BASENAME);
