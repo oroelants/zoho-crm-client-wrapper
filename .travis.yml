@@ -6,6 +6,8 @@ php:
 before_script:
  - wget http://getcomposer.org/composer.phar
  - mkdir zoho_sync_auth
+ - touch zcrm_oauthtokens.txt
+ - touch ZCRMClientLibrary.log
  - wget -O 239515915463_33e7bbe532d1ec07802e_512.jpeg https://images.unsplash.com/photo-1488590528505-98d2b5aba04b?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=200&q=80
  - php composer.phar install --dev --no-interaction
 
