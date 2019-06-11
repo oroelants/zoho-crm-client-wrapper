@@ -21,7 +21,7 @@
 	},
     "require-dev" : {
 		"ext-curl": "*",
-		"phpunit/phpunit": "^7.0",
+		"phpunit/phpunit": "~7.0",
 		"phpunit/php-code-coverage": "^6.1"
 	},
 	"autoload" : {
