@@ -14,7 +14,7 @@
 	"require" : {
 		"php" : ">=7.1",
 		"ext-curl": "*",
-		"zohocrm/php-sdk": "^1.1",
+		"zohocrm/php-sdk": "^2.0",
 		"symfony/console": "~3.0",
 		"mouf/utils.log.psr.multi-logger": "^1.0",
 		"logger/essentials" : "^0.1.9"

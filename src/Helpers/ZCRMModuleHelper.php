@@ -17,13 +17,13 @@ class ZCRMModuleHelper
      * @param  int                        $page
      * @param  int                        $limitRows
      * @param  \DateTime|null             $fromModifiedDate
-     * @return \ZCRMRecord[]
+     * @return ZCRMRecord[]
      */
     public static function getAllZCRMRecordsFromPagination(ZohoClient $zohoClient, string $module, $cvId = null, $sortColumnString = null, $sortOrderString = null, $page = 1, $limitRows = 200, \DateTime $fromModifiedDate = null)
     {
 
         /**
-         * @var $records \ZCRMRecord[]
+         * @var $records ZCRMRecord[]
          */
         $records = [];
         $header = null;
@@ -36,15 +36,15 @@ class ZCRMModuleHelper
         do {
             try {
                 /**
-                 * @var $recordsRequest \BulkAPIResponse
+                 * @var $recordsRequest BulkAPIResponse
                  */
                 $recordsRequest = $module->getRecords($cvId, $sortColumnString, $sortOrderString, $page, $limitRows, $header);
 
-            } catch (\ZCRMException $exception) {
+            } catch (ZCRMException $exception) {
                 if (strtolower($exception->getExceptionCode()) === strtolower(ExceptionZohoClient::EXCEPTION_CODE_NO__CONTENT)) {
                     $recordsRequest = null;
                 } else {
-                    \APIExceptionHandler::logException($exception);
+                    APIExceptionHandler::logException($exception);
                     throw $exception;
                 }
             }
@@ -70,7 +70,7 @@ class ZCRMModuleHelper
      * @param  int                     $page
      * @param  int                     $perPage
      * @return \ZCRMTrashRecord[]
-     * @throws \ZCRMException
+     * @throws ZCRMException
      */
     public static function getAllZCRMTrashRecordsFromPagination(ZohoClient $zohoClient, $module, $typeRecord = 'all', \DateTimeInterface $lastModifiedTime = null, $page = 1, $perPage = 200)
     {
@@ -82,7 +82,7 @@ class ZCRMModuleHelper
 
         do {
             /**
-             * @var $recordsRequest \BulkAPIResponse
+             * @var $recordsRequest BulkAPIResponse
              */
             $recordsRequest = $zohoClient->getDeletedRecords($module, $typeRecord, $lastModifiedTime, $page, $perPage);
 
