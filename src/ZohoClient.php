@@ -52,6 +52,13 @@ class ZohoClient
     }
 
     /**
+     * @return \Psr\Log\LoggerInterface
+     */
+    public function getLogger() {
+        return $this->logger;
+    }
+
+    /**
      * @return string
      */
     public function getTimezone(): string
