@@ -111,7 +111,7 @@ class ZohoClient
     {
         $this->initCLient();
         try{
-            return ZohoOAuth::getZoClientInstance();
+            return ZohoOAuth::getClientInstance();
         } catch (ZohoOAuthException $ex){
             $this->logClientException(__METHOD__, $ex,'error', 'Cannot get the zoho Client Instance');
             throw $ex;
