@@ -264,7 +264,7 @@ class ZohoClient
         }catch(\ZCRMException $ex){
             $this->logClientException(__METHOD__, $ex,'error', 'Cannot get record {id} for the module {moduleName}. Maybe it does not exist or something wrong', [
                 'moduleName' => $module,
-                'id' => implode(',', $id)
+                'id' => $id
             ]);
             throw $ex;
         }
