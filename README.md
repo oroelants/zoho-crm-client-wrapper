@@ -10,7 +10,6 @@ This project is a PHP wrapper for  ZOHO CRM Client ([zcrm-php-sdk](https://githu
 
 Initialize the client?
 -------------------------------------
-```
 
 Targetting the correct Zoho API
 -------------------------------
@@ -22,11 +21,11 @@ use the third parameter of the `Client` constructor:
 ```php
 $zohoClient = new ZohoClient([
     'client_id' => 'xxxxxxxxxxxxxxxxxxxxxx',
-     'client_secret' => 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+    'client_secret' => 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
     'redirect_uri' => 'http://xxxxxxxxx.com/bakcxxxx',
     'currentUserEmail' => 'xxxxx@test.fr',
     'applicationLogFilePath' => '/xxx/xxx/',
-    'sandbox' => true or false,
+    'sandbox' => 'true' or 'false',
     'apiBaseUrl' => '',
     'apiVersion' => '',
     'access_type' => '',

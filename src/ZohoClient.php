@@ -55,7 +55,7 @@ class ZohoClient
      *             'redirect_uri' => '',
      *             'currentUserEmail' => '',
      *             'applicationLogFilePath' => '',
-     *             'sandbox' => true or false,
+     *             'sandbox' => 'true' or 'false',
      *             'apiBaseUrl' => '',
      *             'apiVersion' => '',
      *             'access_type' => '',
@@ -70,6 +70,13 @@ class ZohoClient
         $this->configurations = $configurations;
         $this->timezone = $timezone;
         $this->logger = $logger? $logger : new NullLogger();
+    }
+
+    /**
+     * @return \Psr\Log\LoggerInterface
+     */
+    public function getLogger() {
+        return $this->logger;
     }
 
     /**
@@ -285,7 +292,7 @@ class ZohoClient
         }catch(ZCRMException $ex){
             $this->logClientException(__METHOD__, $ex,'error', 'Cannot get record {id} for the module {moduleName}. Maybe it does not exist or something wrong', [
                 'moduleName' => $module,
-                'id' => implode(',', $id)
+                'id' => $id
             ]);
             throw $ex;
         }
