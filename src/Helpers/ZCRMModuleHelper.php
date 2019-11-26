@@ -36,7 +36,7 @@ class ZCRMModuleHelper
         $module = $zohoClient->getModule($module);
         do {
             if ($logger) {
-                $logger->info(sprintf('Getting records for module %s and page %d...', $module->getAPIName(), $page));
+                $logger->info(sprintf('Getting updated records for module %s and page %d...', $module->getAPIName(), $page));
             }
             try {
                 /**
@@ -76,7 +76,7 @@ class ZCRMModuleHelper
      * @return \ZCRMTrashRecord[]
      * @throws ZCRMException
      */
-    public static function getAllZCRMTrashRecordsFromPagination(ZohoClient $zohoClient, $module, $typeRecord = 'all', \DateTimeInterface $lastModifiedTime = null, $page = 1, $perPage = 200)
+    public static function getAllZCRMTrashRecordsFromPagination(ZohoClient $zohoClient, $module, $typeRecord = 'all', \DateTimeInterface $lastModifiedTime = null, $page = 1, $perPage = 200, LoggerInterface $logger = null)
     {
 
         /**
@@ -85,6 +85,9 @@ class ZCRMModuleHelper
         $records = [];
 
         do {
+            if ($logger) {
+                $logger->info(sprintf('Getting deleted records for module %s and page %d...', $module->getAPIName(), $page));
+            }
             /**
              * @var $recordsRequest BulkAPIResponse
              */
