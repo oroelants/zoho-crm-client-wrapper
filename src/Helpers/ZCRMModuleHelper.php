@@ -86,7 +86,7 @@ class ZCRMModuleHelper
 
         do {
             if ($logger) {
-                $logger->info(sprintf('Getting deleted records for module %s and page %d...', $module->getAPIName(), $page));
+                $logger->info(sprintf('Getting deleted records for module %s and page %d...', $zohoClient->getModule($module)->getAPIName(), $page));
             }
             /**
              * @var $recordsRequest BulkAPIResponse
