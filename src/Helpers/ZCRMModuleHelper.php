@@ -2,6 +2,7 @@
 
 namespace Wabel\Zoho\CRM\Helpers;
 
+use Psr\Log\LoggerInterface;
 use Wabel\Zoho\CRM\Exceptions\ExceptionZohoClient;
 use Wabel\Zoho\CRM\ZohoClient;
 
@@ -19,7 +20,7 @@ class ZCRMModuleHelper
      * @param  \DateTime|null             $fromModifiedDate
      * @return ZCRMRecord[]
      */
-    public static function getAllZCRMRecordsFromPagination(ZohoClient $zohoClient, string $module, $cvId = null, $sortColumnString = null, $sortOrderString = null, $page = 1, $limitRows = 200, \DateTime $fromModifiedDate = null)
+    public static function getAllZCRMRecordsFromPagination(ZohoClient $zohoClient, string $module, $cvId = null, $sortColumnString = null, $sortOrderString = null, $page = 1, $limitRows = 200, \DateTime $fromModifiedDate = null, LoggerInterface $logger = null)
     {
 
         /**
@@ -34,6 +35,9 @@ class ZCRMModuleHelper
         }
         $module = $zohoClient->getModule($module);
         do {
+            if ($logger) {
+                $logger->info(sprintf('Getting records for module %s and page %d...', $module->getAPIName(), $page));
+            }
             try {
                 /**
                  * @var $recordsRequest BulkAPIResponse
