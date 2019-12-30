@@ -1,39 +1,39 @@
 {
-	"name" : "wabel/zoho-crm-client-wrapper",
-	"description" : "A Wrapper for the zcrm-php-sdk based on wabel/zoho-crm-orm v1. It's a package for manipulating of data from your Zoho CRM Account through the API v2.",
-	"type" : "library",
-	"homepage" : "https://github.com/Wabel/zoho-crm-client-wrapper",
-	"keywords" : [
-		"Zoho CRM Client",
-		"Zoho CRM PHP SDK",
-	  	"Zoho CRM API v2",
-	  	"Zoho CRM",
-		"ZohoCRM",
-		"Zoho"
-	],
-	"require" : {
-		"php" : ">=7.1",
-		"ext-curl": "*",
-		"zohocrm/php-sdk": "^2.0",
-		"symfony/console": "~3.0",
-		"mouf/utils.log.psr.multi-logger": "^1.0",
-		"logger/essentials" : "^0.1.9"
-	},
-    "require-dev" : {
-		"ext-curl": "*",
-		"phpunit/phpunit": "~7.0",
-		"phpunit/php-code-coverage": "^6.1"
-	},
-	"autoload" : {
-		"psr-4" : {
-			"Wabel\\Zoho\\CRM\\" : "src"
-		}
-	},
-    "autoload-dev" : {
-  	    "psr-4" : {
-		    "Wabel\\Zoho\\CRM\\" : "tests"
-	    }
-    },
-	"minimum-stability": "dev",
-	"prefer-stable": true
+  "name": "wabel/zoho-crm-client-wrapper",
+  "description": "A Wrapper for the zcrm-php-sdk based on wabel/zoho-crm-orm v1. It's a package for manipulating of data from your Zoho CRM Account through the API v2.",
+  "type": "library",
+  "homepage": "https://github.com/Wabel/zoho-crm-client-wrapper",
+  "keywords": [
+    "Zoho CRM Client",
+    "Zoho CRM PHP SDK",
+    "Zoho CRM API v2",
+    "Zoho CRM",
+    "ZohoCRM",
+    "Zoho"
+  ],
+  "require": {
+    "php": ">=7.1",
+    "ext-curl": "*",
+    "zohocrm/php-sdk": "^2.0",
+    "symfony/console": "~3.0",
+    "mouf/utils.log.psr.multi-logger": "^1.0",
+    "logger/essentials": "^0.1.9"
+  },
+  "require-dev": {
+    "ext-curl": "*",
+    "phpunit/phpunit": "~7.0",
+    "phpunit/php-code-coverage": "^6.1"
+  },
+  "autoload": {
+    "psr-4": {
+      "Wabel\\Zoho\\CRM\\": "src"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Wabel\\Zoho\\CRM\\": "tests"
+    }
+  },
+  "minimum-stability": "dev",
+  "prefer-stable": true
 }
