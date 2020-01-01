@@ -14,7 +14,7 @@
   "require": {
     "php": ">=7.1",
     "ext-curl": "*",
-    "zohocrm/php-sdk": "^2.0",
+    "zohocrm/php-sdk": "^2.0.10",
     "symfony/console": "~3.0",
     "mouf/utils.log.psr.multi-logger": "^1.0",
     "logger/essentials": "^0.1.9"
@@ -35,5 +35,11 @@
     }
   },
   "minimum-stability": "dev",
-  "prefer-stable": true
+  "prefer-stable": true,
+  "repositories": [
+    {
+      "type": "git",
+      "url": "https://github.com/oroelants/zcrm-php-sdk"
+    }
+  ]
 }
