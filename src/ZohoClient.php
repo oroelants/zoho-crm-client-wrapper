@@ -304,13 +304,13 @@ class ZohoClient
    * @param  string|null $cvId
    * @param  string|null $sortColumnString
    * @param  string|null $sortOrderString
-   * @param  int $fromIndex
-   * @param  int $toIndex
+   * @param  int $page
+   * @param  int $perPage
    * @param  null $header
    * @return ZCRMRecord[]
    * @throws ZCRMException
    */
-  public function getRecords($module, $cvId = null, $sortColumnString = null, $sortOrderString = null, $fromIndex = 1, $toIndex = 200, $header = null)
+  public function getRecords($module, $cvId = null, $sortColumnString = null, $sortOrderString = null, $page = 1, $perPage = 200, $header = null)
   {
 
     $zcrmModuleIns = $this->getModule($module);
@@ -318,7 +318,19 @@ class ZohoClient
       /**
        * @var $bulkAPIResponse BulkAPIResponse
        */
-      $bulkAPIResponse = $zcrmModuleIns->getRecords($cvId, $sortColumnString, $sortOrderString, $fromIndex, $toIndex, $header);
+      $params = array();
+      if (isset($cvId))
+        $params['cvid'] = $cvId;
+      if (isset($sortColumnString))
+        $params['sort_by'] = $sortColumnString;
+      if (isset($cvId))
+        $params['sort_order'] = $sortOrderString;
+      if (isset($page))
+        $params['page'] = $page;
+      if (isset($perPage))
+        $params['per_page'] = $perPage;
+
+      $bulkAPIResponse = $zcrmModuleIns->getRecords($params, $header);
       return $bulkAPIResponse->getData();
     } catch (ZCRMException $ex) {
       $this->logClientException(__METHOD__, $ex, 'error', 'Cannot get records for the module {moduleName}', [
@@ -495,11 +507,12 @@ class ZohoClient
   {
     $zcrmModuleIns = $this->getModule($module);
     try {
+      $params = array('page' => $page, 'per_page' => $perPage);
       if ($type === 'word') {
-        $bulkAPIResponse = $zcrmModuleIns->searchRecords($searchCondition, $page, $perPage);
+        $bulkAPIResponse = $zcrmModuleIns->searchRecordsByWord($searchCondition, $params);
       } else {
         $typeSearchMethod = "searchRecordsBy" . ucfirst($type);
-        $bulkAPIResponse = $zcrmModuleIns->{"$typeSearchMethod"}($searchCondition, $page, $perPage);
+        $bulkAPIResponse = $zcrmModuleIns->{"$typeSearchMethod"}($searchCondition, $params);
       }
       return $bulkAPIResponse->getData();
     } catch (ZCRMException $ex) {
