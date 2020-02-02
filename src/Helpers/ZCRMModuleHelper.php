@@ -29,7 +29,7 @@ class ZCRMModuleHelper
      * @var $records ZCRMRecord[]
      */
     $records = [];
-    $header = null;
+    $header = array();
     if ($fromModifiedDate) {
       $header = [
         'If-Modified-Since' => $fromModifiedDate->format(\DateTime::ATOM)
