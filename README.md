@@ -65,3 +65,14 @@ Read how to change the client configuration - read [Configuration](https://githu
 - change the stored environment variable `deal_status`
 - change the stored environment variable `campaign_type`
 - change the stored environment variable `filepath_upload`
+
+# Changelog
+
+## 1.4.2
+
+Change the `triggers` parameter when inserting/updating/deleting records to use array instead of bool.
+
+## 1.4.1
+Change the way the records are fetched. An optional bool reference can be used to stop the loop and return the 200 results, instead of getting the other records in case of "hasMoreResults".
+
+Using this option, the `page` parameter becomes mandatory. 
