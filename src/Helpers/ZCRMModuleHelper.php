@@ -22,14 +22,14 @@ class ZCRMModuleHelper
    * @param  \DateTime|null             $fromModifiedDate
    * @return ZCRMRecord[]
    */
-  public static function getAllZCRMRecordsFromPagination(ZohoClient $zohoClient, string $module, $cvId = null, $sortColumnString = null, $sortOrderString = null, $page = 1, $limitRows = 200, \DateTime $fromModifiedDate = null, LoggerInterface $logger = null)
+  public static function getAllZCRMRecordsFromPagination(ZohoClient $zohoClient, string $module, $cvId = null, $sortColumnString = null, $sortOrderString = null, $page = 1, $limitRows = 200, \DateTime $fromModifiedDate = null, LoggerInterface $logger = null, bool &$stopLoopAndHasMoreResults = null)
   {
 
     /**
      * @var $records ZCRMRecord[]
      */
     $records = [];
-    $header = array();
+    $header = [];
     if ($fromModifiedDate) {
       $header = [
         'If-Modified-Since' => $fromModifiedDate->format(\DateTime::ATOM)
@@ -44,19 +44,7 @@ class ZCRMModuleHelper
         /**
          * @var $recordsRequest BulkAPIResponse
          */
-        $params = array();
-        if (isset($cvId))
-          $params['cvid'] = $cvId;
-        if (isset($sortColumnString))
-          $params['sort_by'] = $sortColumnString;
-        if (isset($cvId))
-          $params['sort_order'] = $sortOrderString;
-        if (isset($page))
-          $params['page'] = $page;
-        if (isset($limitRows))
-          $params['per_page'] = $limitRows;
-
-        $recordsRequest = $module->getRecords($params, $header);
+        $recordsRequest = $module->getRecords($cvId, $sortColumnString, $sortOrderString, $page, $limitRows, $header);
       } catch (ZCRMException $exception) {
         if (strtolower($exception->getExceptionCode()) === strtolower(ExceptionZohoClient::EXCEPTION_CODE_NO__CONTENT)) {
           $recordsRequest = null;
@@ -72,6 +60,10 @@ class ZCRMModuleHelper
       $infoResponse = $recordsRequest ? $recordsRequest->getInfo() : null;
       if ($infoResponse && $infoResponse->getRecordCount()) {
         $records = array_merge($records, $recordsRequest->getData());
+      }
+      if ($stopLoopAndHasMoreResults) {
+        $stopLoopAndHasMoreResults = $infoResponse && $infoResponse->getMoreRecords();
+        break;
       }
       $page++;
     } while ($infoResponse && $infoResponse->getMoreRecords());
@@ -89,7 +81,7 @@ class ZCRMModuleHelper
    * @return \ZCRMTrashRecord[]
    * @throws ZCRMException
    */
-  public static function getAllZCRMTrashRecordsFromPagination(ZohoClient $zohoClient, $module, $typeRecord = 'all', \DateTimeInterface $lastModifiedTime = null, $page = 1, $perPage = 200, LoggerInterface $logger = null)
+  public static function getAllZCRMTrashRecordsFromPagination(ZohoClient $zohoClient, $module, $typeRecord = 'all', \DateTimeInterface $lastModifiedTime = null, $page = 1, $perPage = 200, LoggerInterface $logger = null, bool &$stopLoopAndHasMoreResults = null)
   {
 
     /**
@@ -113,6 +105,10 @@ class ZCRMModuleHelper
       $infoResponse = $recordsRequest ? $recordsRequest->getInfo() : null;
       if ($infoResponse && $infoResponse->getRecordCount()) {
         $records = array_merge($records, $recordsRequest->getData());
+      }
+      if ($stopLoopAndHasMoreResults) {
+        $stopLoopAndHasMoreResults = $infoResponse && $infoResponse->getMoreRecords();
+        break;
       }
       $page++;
     } while ($infoResponse && $infoResponse->getMoreRecords());
